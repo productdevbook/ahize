@@ -15,6 +15,7 @@ describe("providers", () => {
         expect(typeof provider.load).toBe("function");
         expect(typeof provider.identify).toBe("function");
         expect(typeof provider.track).toBe("function");
+        expect(typeof provider.pageView).toBe("function");
         expect(typeof provider.show).toBe("function");
         expect(typeof provider.hide).toBe("function");
         expect(typeof provider.shutdown).toBe("function");
@@ -43,6 +44,8 @@ describe("providers", () => {
           (provider.identify as (v: unknown) => Promise<void>)({ id: "u1" }),
         ).resolves.toBeUndefined();
         await expect(provider.track("evt")).resolves.toBeUndefined();
+        await expect(provider.pageView()).resolves.toBeUndefined();
+        await expect(provider.pageView({ path: "/foo", locale: "tr" })).resolves.toBeUndefined();
         await expect(provider.show()).resolves.toBeUndefined();
         await expect(provider.hide()).resolves.toBeUndefined();
         await expect(provider.shutdown()).resolves.toBeUndefined();

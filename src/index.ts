@@ -25,6 +25,8 @@ export {
   type LifecycleState,
 } from "./_lifecycle.ts";
 export { waitForDefer } from "./_defer.ts";
+export { mountFacade } from "./facade.ts";
+export type { FacadeHandle, FacadeOptions, FacadeProvider } from "./facade.ts";
 export {
   cspDirectives,
   mergeCsp,

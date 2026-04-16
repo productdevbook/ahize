@@ -81,6 +81,7 @@ export async function load(options: HubSpotLoadOptions): Promise<void> {
       id: "ahize-hubspot",
       src: `//${host}/${options.portalId}.js`,
       nonce: options.nonce,
+      partytown: options.partytown,
     });
   } catch (error) {
     lifecycle.transition("idle");
@@ -116,6 +117,16 @@ export function identify(identity: Identity): Promise<void> {
     };
   }
   return Promise.resolve();
+}
+
+export function pageView(info?: { path?: string }): Promise<void> {
+  if (!isBrowser()) return Promise.resolve();
+  const path = info?.path ?? (isBrowser() ? location.pathname + location.search : undefined);
+  if (path) hsq().push(["setPath", path]);
+  hsq().push(["trackPageView"]);
+  return conversations.enqueue((api) => {
+    api.widget.refresh({ openToNewThread: false });
+  });
 }
 
 export function track<T extends EventMetadata = EventMetadata>(

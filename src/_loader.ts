@@ -6,6 +6,8 @@ export interface InjectOptions {
   async?: boolean;
   defer?: boolean;
   nonce?: string;
+  /** When true, inject as `<script type="text/partytown">` for worker offload. */
+  partytown?: boolean;
 }
 
 const pending = new Map<string, Promise<void>>();
@@ -28,6 +30,7 @@ export function injectScript(opts: InjectOptions): Promise<void> {
     script.defer = opts.defer ?? false;
     if (opts.id) script.id = opts.id;
     if (opts.nonce) script.nonce = opts.nonce;
+    if (opts.partytown) script.type = "text/partytown";
 
     script.addEventListener("load", () => resolve());
     script.addEventListener("error", () =>

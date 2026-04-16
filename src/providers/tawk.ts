@@ -70,6 +70,7 @@ export async function load(options: TawkLoadOptions): Promise<void> {
       id: "ahize-tawk",
       src: `https://embed.tawk.to/${options.propertyId}/${widget}`,
       nonce: options.nonce,
+      partytown: options.partytown,
     });
   } catch (error) {
     lifecycle.transition("idle");
@@ -94,6 +95,16 @@ export function identify(identity: Identity): Promise<void> {
     a.setAttributes?.(attrs, (err) => {
       if (err) console.warn("[ahize/tawk] setAttributes failed", err);
     });
+  });
+}
+
+export function pageView(info?: { path?: string; locale?: string }): Promise<void> {
+  if (!isBrowser()) return Promise.resolve();
+  return queue.enqueue((a) => {
+    const attrs: Record<string, unknown> = {};
+    if (info?.path) attrs["path"] = info.path;
+    if (info?.locale) attrs["locale"] = info.locale;
+    if (Object.keys(attrs).length > 0) a.setAttributes?.(attrs);
   });
 }
 

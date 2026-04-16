@@ -86,6 +86,7 @@ export async function load(options: ChatwootLoadOptions): Promise<void> {
       defer: true,
       async: false,
       nonce: options.nonce,
+      partytown: options.partytown,
     });
   } catch (error) {
     lifecycle.transition("idle");
@@ -115,6 +116,16 @@ export function identify(identity: Identity): Promise<void> {
     }
     if (identity.attributes) Object.assign(user, identity.attributes);
     api.setUser(id, user);
+  });
+}
+
+export function pageView(info?: { path?: string; locale?: string }): Promise<void> {
+  if (!isBrowser()) return Promise.resolve();
+  return queue.enqueue((api) => {
+    const attrs: Record<string, unknown> = {};
+    if (info?.path) attrs["path"] = info.path;
+    if (Object.keys(attrs).length > 0) api.setCustomAttributes(attrs);
+    if (info?.locale) api.setLocale?.(info.locale);
   });
 }
 

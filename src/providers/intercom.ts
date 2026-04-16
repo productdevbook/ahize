@@ -72,6 +72,7 @@ export async function load(options: IntercomLoadOptions): Promise<void> {
       id: "ahize-intercom",
       src: `https://widget.intercom.io/widget/${options.appId}`,
       nonce: options.nonce,
+      partytown: options.partytown,
     });
   } catch (error) {
     lifecycle.transition("idle");
@@ -100,6 +101,17 @@ export function identify(identity: Identity): Promise<void> {
       created_at: identity.createdAt,
       user_hash: identity.verification?.kind === "hmac" ? identity.verification.hash : undefined,
       ...identity.attributes,
+    });
+  });
+}
+
+export function pageView(info?: { path?: string; locale?: string }): Promise<void> {
+  if (!isBrowser()) return Promise.resolve();
+  return queue.enqueue((Intercom) => {
+    Intercom("update", {
+      last_request_at: Math.floor(Date.now() / 1000),
+      ...(info?.path ? { current_page: info.path } : {}),
+      ...(info?.locale ? { language_override: info.locale } : {}),
     });
   });
 }

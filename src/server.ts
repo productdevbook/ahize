@@ -31,6 +31,10 @@ export async function track<T extends EventMetadata = EventMetadata>(
   // noop
 }
 
+export async function pageView(_info?: { path?: string; locale?: string }): Promise<void> {
+  // noop
+}
+
 export async function show(): Promise<void> {
   // noop
 }

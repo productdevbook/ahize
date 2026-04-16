@@ -45,6 +45,8 @@ export interface BaseLoadOptions {
   defer?: DeferStrategy;
   /** Consent gate. If false, load() resolves without injecting. Default: true. */
   consent?: boolean;
+  /** Inject script as `<script type="text/partytown">` to offload to worker. */
+  partytown?: boolean;
 }
 
 export interface LoadOptions extends BaseLoadOptions {

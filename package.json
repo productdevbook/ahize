@@ -79,6 +79,10 @@
     "./csp": {
       "types": "./dist/csp.d.mts",
       "default": "./dist/csp.mjs"
+    },
+    "./facade": {
+      "types": "./dist/facade.d.mts",
+      "default": "./dist/facade.mjs"
     }
   },
   "scripts": {

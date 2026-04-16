@@ -46,6 +46,7 @@ export async function load(options: ZendeskLoadOptions): Promise<void> {
       id: "ze-snippet",
       src: `https://static.zdassets.com/ekr/snippet.js?key=${options.key}`,
       nonce: options.nonce,
+      partytown: options.partytown,
     });
   } catch (error) {
     lifecycle.transition("idle");
@@ -88,6 +89,14 @@ export function identify(identity: Identity): Promise<void> {
         console.warn("[ahize/zendesk] loginUser failed", err);
       },
     );
+  });
+}
+
+export function pageView(info?: { path?: string; locale?: string }): Promise<void> {
+  if (!isBrowser()) return Promise.resolve();
+  return queue.enqueue((zE) => {
+    if (info?.locale) zE("messenger", "locale", info.locale);
+    if (info?.path) zE("messenger:set", "conversationFields", [{ id: "path", value: info.path }]);
   });
 }
 

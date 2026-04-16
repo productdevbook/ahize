@@ -63,6 +63,7 @@ export async function load(options: CrispLoadOptions): Promise<void> {
       id: "ahize-crisp",
       src: "https://client.crisp.chat/l.js",
       nonce: options.nonce,
+      partytown: options.partytown,
     });
   } catch (error) {
     lifecycle.transition("idle");
@@ -91,6 +92,14 @@ export function identify(identity: Identity): Promise<void> {
     for (const [k, v] of Object.entries(identity.attributes)) pairs.push([k, v]);
     if (pairs.length > 0) q.push(["set", "session:data", [pairs]]);
   }
+  return Promise.resolve();
+}
+
+export function pageView(info?: { path?: string; locale?: string }): Promise<void> {
+  if (!isBrowser()) return Promise.resolve();
+  const q = bus();
+  if (info?.path) q.push(["set", "session:event", [[["page:viewed", { path: info.path }]]]]);
+  if (info?.locale) q.push(["set", "session:data", [[["locale", info.locale]]]]);
   return Promise.resolve();
 }
 

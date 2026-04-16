@@ -9,6 +9,7 @@ declare var window:
   | undefined;
 
 declare var document: Document;
+declare var location: { pathname: string; search: string; href: string; hostname: string };
 
 interface Document {
   createElement(tag: "script"): HTMLScriptElement;

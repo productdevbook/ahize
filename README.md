@@ -12,6 +12,7 @@
   <a href="https://npmjs.com/package/ahize"><img src="https://img.shields.io/npm/dm/ahize?style=flat&colorA=18181B&colorB=F0DB4F" alt="npm downloads"></a>
   <a href="https://bundlephobia.com/result?p=ahize"><img src="https://img.shields.io/bundlephobia/minzip/ahize?style=flat&colorA=18181B&colorB=F0DB4F" alt="bundle size"></a>
   <a href="https://github.com/productdevbook/ahize/blob/main/LICENSE"><img src="https://img.shields.io/github/license/productdevbook/ahize?style=flat&colorA=18181B&colorB=F0DB4F" alt="license"></a>
+  <a href="https://github.com/sponsors/productdevbook"><img src="https://img.shields.io/github/sponsors/productdevbook?style=flat&colorA=18181B&colorB=F0DB4F&label=sponsors" alt="sponsors"></a>
 </p>
 
 ## Why

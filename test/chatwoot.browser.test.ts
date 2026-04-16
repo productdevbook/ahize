@@ -116,6 +116,60 @@ describe("chatwoot (browser) — vendor-doc audit fixes (#79)", () => {
     await chatwoot.destroy()
   })
 
+  it("typed config fields populate window.chatwootSettings", async () => {
+    const rec: Recorded = {
+      setColorScheme: [],
+      deleteCustomAttribute: [],
+      deleteConversationCustomAttribute: [],
+      popoutChatWindow: 0,
+    }
+    const chatwoot = await import("../src/providers/chatwoot.ts")
+    const loadPromise = chatwoot.load({
+      websiteToken: "tok_typed",
+      type: "expanded_bubble",
+      widgetStyle: "flat",
+      darkMode: "auto",
+      position: "left",
+      locale: "tr",
+      useBrowserLanguage: false,
+      hideMessageBubble: true,
+      showPopoutButton: true,
+      showUnreadMessagesDialog: false,
+      launcherTitle: "Yardım",
+      baseDomain: ".example.com",
+      settings: { customField: "kept" },
+    })
+    await new Promise((r) => setTimeout(r, 0))
+
+    // biome-ignore lint/suspicious/noExplicitAny: test shim
+    const settings = (globalThis as any).chatwootSettings as Record<string, unknown>
+    expect(settings).toMatchObject({
+      type: "expanded_bubble",
+      widgetStyle: "flat",
+      darkMode: "auto",
+      position: "left",
+      locale: "tr",
+      useBrowserLanguage: false,
+      hideMessageBubble: true,
+      showPopoutButton: true,
+      showUnreadMessagesDialog: false,
+      launcherTitle: "Yardım",
+      baseDomain: ".example.com",
+      customField: "kept",
+    })
+
+    // Finish boot so destroy() doesn't race.
+    const script = document.getElementById("ahize-chatwoot") as HTMLScriptElement
+    // biome-ignore lint/suspicious/noExplicitAny: test shim
+    ;(globalThis as any).chatwootSDK = { run: () => {} }
+    // biome-ignore lint/suspicious/noExplicitAny: test shim
+    ;(globalThis as any).$chatwoot = fakeChatwoot(rec)
+    script.dispatchEvent(new Event("load"))
+    window.dispatchEvent(new CustomEvent("chatwoot:ready"))
+    await loadPromise
+    await chatwoot.destroy()
+  })
+
   it("bridges chatwoot:opened / closed / on-start-conversation / postback", async () => {
     const rec: Recorded = {
       setColorScheme: [],

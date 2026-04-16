@@ -93,9 +93,46 @@ function normalizeBaseUrl(url: string): string {
   return u
 }
 
+const TYPED_SETTINGS_KEYS = [
+  "type",
+  "widgetStyle",
+  "darkMode",
+  "position",
+  "locale",
+  "useBrowserLanguage",
+  "hideMessageBubble",
+  "showPopoutButton",
+  "showUnreadMessagesDialog",
+  "launcherTitle",
+  "baseDomain",
+] as const satisfies ReadonlyArray<keyof ChatwootLoadOptions>
+
 export interface ChatwootLoadOptions extends LoadOptions {
   websiteToken: string
   baseUrl?: string
+  /** Bubble design. */
+  type?: "standard" | "expanded_bubble"
+  /** Widget chrome variant. */
+  widgetStyle?: "standard" | "flat"
+  /** Initial color scheme; runtime override available via setColorScheme(). */
+  darkMode?: "light" | "auto"
+  /** Bubble alignment. */
+  position?: "left" | "right"
+  /** Initial locale; runtime override available via setLocale(). */
+  locale?: string
+  /** When true, Chatwoot picks the locale from the visitor's browser. */
+  useBrowserLanguage?: boolean
+  /** Hide the floating message bubble. */
+  hideMessageBubble?: boolean
+  /** Show a popout button inside the widget header. */
+  showPopoutButton?: boolean
+  /** Show the unread-messages dialog. */
+  showUnreadMessagesDialog?: boolean
+  /** Custom launcher button title. */
+  launcherTitle?: string
+  /** Cookie domain (typically used for cross-subdomain identity). */
+  baseDomain?: string
+  /** Escape hatch for any setting not yet typed; merged before typed fields. */
   settings?: Record<string, unknown>
 }
 
@@ -112,7 +149,12 @@ export async function load(options: ChatwootLoadOptions): Promise<void> {
   currentToken = options.websiteToken
   currentBaseUrl = baseUrl
   await waitForDefer(options.defer ?? "immediate")
-  if (options.settings) w().chatwootSettings = options.settings
+  const settings: Record<string, unknown> = { ...options.settings }
+  for (const key of TYPED_SETTINGS_KEYS) {
+    const v = options[key]
+    if (v !== undefined) settings[key] = v
+  }
+  if (Object.keys(settings).length > 0) w().chatwootSettings = settings
 
   readyPromise = new Promise((r) => {
     readyResolve = r

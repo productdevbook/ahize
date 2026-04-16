@@ -4,8 +4,9 @@ import * as crisp from "../src/providers/crisp.ts";
 import * as tawk from "../src/providers/tawk.ts";
 import * as zendesk from "../src/providers/zendesk.ts";
 import * as hubspot from "../src/providers/hubspot.ts";
+import * as chatwoot from "../src/providers/chatwoot.ts";
 
-const providers = { intercom, crisp, tawk, zendesk, hubspot };
+const providers = { intercom, crisp, tawk, zendesk, hubspot, chatwoot };
 
 describe("providers", () => {
   for (const [name, provider] of Object.entries(providers)) {
@@ -24,6 +25,7 @@ describe("providers", () => {
           (provider.load as (o: Record<string, string>) => Promise<void>)({
             appId: "x",
             websiteId: "x",
+            websiteToken: "x",
             propertyId: "x",
             key: "x",
             portalId: "x",

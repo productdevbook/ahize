@@ -12,6 +12,8 @@
     "tawk",
     "zendesk",
     "hubspot",
+    "chatwoot",
+    "self-hosted",
     "livechat",
     "drift",
     "freshchat",
@@ -65,6 +67,10 @@
     "./hubspot": {
       "types": "./dist/providers/hubspot.d.mts",
       "default": "./dist/providers/hubspot.mjs"
+    },
+    "./chatwoot": {
+      "types": "./dist/providers/chatwoot.d.mts",
+      "default": "./dist/providers/chatwoot.mjs"
     }
   },
   "scripts": {

@@ -53,6 +53,7 @@ shutdown();                    // end session / log out
 | Tawk.to    | `ahize/tawk`       | scaffolded  |
 | Zendesk    | `ahize/zendesk`    | scaffolded  |
 | HubSpot    | `ahize/hubspot`    | scaffolded  |
+| Chatwoot   | `ahize/chatwoot`   | scaffolded  |
 | Drift      | `ahize/drift`      | planned     |
 | Freshchat  | `ahize/freshchat`  | planned     |
 | LiveChat   | `ahize/livechat`   | planned     |

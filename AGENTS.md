@@ -20,6 +20,7 @@ src/
     tawk.ts                 # Sub-path: ahize/tawk
     zendesk.ts              # Sub-path: ahize/zendesk
     hubspot.ts              # Sub-path: ahize/hubspot
+    chatwoot.ts             # Sub-path: ahize/chatwoot (self-hosted via baseUrl)
 test/
   *.test.ts                 # vitest suites per provider
 docs/
@@ -28,7 +29,7 @@ docs/
 
 ## Public API
 
-Single entry: `ahize` (unified loader & types). Sub-paths: `ahize/intercom`, `ahize/crisp`, `ahize/tawk`, `ahize/zendesk`, `ahize/hubspot`.
+Single entry: `ahize` (unified loader & types). Sub-paths: `ahize/intercom`, `ahize/crisp`, `ahize/tawk`, `ahize/zendesk`, `ahize/hubspot`, `ahize/chatwoot`.
 
 Key functions: `load()`, `identify()`, `track()`, `show()`, `hide()`, `shutdown()`.
 

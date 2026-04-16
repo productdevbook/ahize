@@ -213,7 +213,7 @@
   </g>
 
   <!-- Provider list -->
-  <text x="600" y="432" text-anchor="middle" fill="#94a3b8" font-family="'SF Mono','Fira Code',monospace" font-size="13" letter-spacing="2.5">INTERCOM · CRISP · TAWK · ZENDESK · HUBSPOT · DRIFT · FRESHCHAT · OLARK</text>
+  <text x="600" y="432" text-anchor="middle" fill="#94a3b8" font-family="'SF Mono','Fira Code',monospace" font-size="12" letter-spacing="2.2">INTERCOM · CRISP · TAWK · ZENDESK · HUBSPOT · CHATWOOT · DRIFT · FRESHCHAT · OLARK</text>
 
   <!-- npm install badge -->
   <g transform="translate(504, 460)">

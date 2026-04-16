@@ -1,8 +1,10 @@
 // Minimal runtime globals shared by ahize providers.
-declare var window: {
-  [key: string]: unknown;
-  document: Document;
-} | undefined;
+declare var window:
+  | {
+      [key: string]: unknown;
+      document: Document;
+    }
+  | undefined;
 
 declare var document: Document;
 

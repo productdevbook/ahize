@@ -46,21 +46,21 @@ shutdown();                    // end session / log out
 
 ## Providers
 
-| Provider   | Import path        | Status      |
-| ---------- | ------------------ | ----------- |
-| Intercom   | `ahize/intercom`   | scaffolded  |
-| Crisp      | `ahize/crisp`      | scaffolded  |
-| Tawk.to    | `ahize/tawk`       | scaffolded  |
-| Zendesk    | `ahize/zendesk`    | scaffolded  |
-| HubSpot    | `ahize/hubspot`    | scaffolded  |
-| Chatwoot   | `ahize/chatwoot`   | scaffolded  |
-| Drift      | `ahize/drift`      | planned     |
-| Freshchat  | `ahize/freshchat`  | planned     |
-| LiveChat   | `ahize/livechat`   | planned     |
-| Olark      | `ahize/olark`      | planned     |
-| Userlike   | `ahize/userlike`   | planned     |
-| HelpScout  | `ahize/helpscout`  | planned     |
-| Smartsupp  | `ahize/smartsupp`  | planned     |
+| Provider  | Import path       | Status     |
+| --------- | ----------------- | ---------- |
+| Intercom  | `ahize/intercom`  | scaffolded |
+| Crisp     | `ahize/crisp`     | scaffolded |
+| Tawk.to   | `ahize/tawk`      | scaffolded |
+| Zendesk   | `ahize/zendesk`   | scaffolded |
+| HubSpot   | `ahize/hubspot`   | scaffolded |
+| Chatwoot  | `ahize/chatwoot`  | scaffolded |
+| Drift     | `ahize/drift`     | planned    |
+| Freshchat | `ahize/freshchat` | planned    |
+| LiveChat  | `ahize/livechat`  | planned    |
+| Olark     | `ahize/olark`     | planned    |
+| Userlike  | `ahize/userlike`  | planned    |
+| HelpScout | `ahize/helpscout` | planned    |
+| Smartsupp | `ahize/smartsupp` | planned    |
 
 ## Why
 

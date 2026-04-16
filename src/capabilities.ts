@@ -2,27 +2,27 @@
 // programmatically pick the right provider, or short-circuit code paths
 // when a capability isn't supported.
 
-import type { ProviderName } from "./_types.ts";
+import type { ProviderName } from "./_types.ts"
 
 export interface ProviderCapabilities {
   /** Identity verification supported (HMAC, JWT, callback). */
-  hmac: boolean;
-  jwt: boolean;
-  callback: boolean;
+  hmac: boolean
+  jwt: boolean
+  callback: boolean
   /** Per-message tracking. */
-  trackEvents: boolean;
+  trackEvents: boolean
   /** Native unread-count callback. */
-  unreadCount: boolean;
+  unreadCount: boolean
   /** prefill() programmatic compose. */
-  prefill: boolean;
+  prefill: boolean
   /** setLocale at runtime (no remount). */
-  setLocale: boolean;
+  setLocale: boolean
   /** setTheme at runtime. */
-  setTheme: boolean;
+  setTheme: boolean
   /** Self-hosted base URL override. */
-  selfHosted: boolean;
+  selfHosted: boolean
   /** Per-region selection (EU/US/AU). */
-  regions: boolean;
+  regions: boolean
 }
 
 const NONE: ProviderCapabilities = {
@@ -36,7 +36,7 @@ const NONE: ProviderCapabilities = {
   setTheme: false,
   selfHosted: false,
   regions: false,
-};
+}
 
 const TABLE: Record<ProviderName, ProviderCapabilities> = {
   intercom: { ...NONE, hmac: true, jwt: true, trackEvents: true, unreadCount: true, regions: true },
@@ -72,12 +72,12 @@ const TABLE: Record<ProviderName, ProviderCapabilities> = {
   jivochat: NONE,
   tidio: { ...NONE, trackEvents: true },
   sendbird: NONE,
-};
+}
 
 export function capabilities(provider: ProviderName): ProviderCapabilities {
-  return TABLE[provider];
+  return TABLE[provider]
 }
 
 export function supports(provider: ProviderName, feature: keyof ProviderCapabilities): boolean {
-  return TABLE[provider][feature];
+  return TABLE[provider][feature]
 }

@@ -12,9 +12,9 @@ import type {
   IdentityListener,
   IdentityState,
   LoadOptions,
-} from "./_types.ts";
+} from "./_types.ts"
 
-const anonymous: IdentityState = { kind: "anonymous" };
+const anonymous: IdentityState = { kind: "anonymous" }
 
 export async function load(_options?: LoadOptions): Promise<void> {
   // noop
@@ -52,17 +52,17 @@ export async function destroy(): Promise<void> {
 }
 
 export function getIdentity(): IdentityState {
-  return anonymous;
+  return anonymous
 }
 
 export function onIdentityChange(_listener: IdentityListener): () => void {
-  return () => {};
+  return () => {}
 }
 
 export function isReady(): boolean {
-  return false;
+  return false
 }
 
 export function state(): "idle" {
-  return "idle";
+  return "idle"
 }

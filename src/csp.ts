@@ -1,4 +1,4 @@
-import type { ProviderName } from "./_types.ts";
+import type { ProviderName } from "./_types.ts"
 
 export type CspDirectiveKey =
   | "script-src"
@@ -7,9 +7,9 @@ export type CspDirectiveKey =
   | "style-src"
   | "img-src"
   | "font-src"
-  | "media-src";
+  | "media-src"
 
-export type CspDirectives = Record<CspDirectiveKey, readonly string[]>;
+export type CspDirectives = Record<CspDirectiveKey, readonly string[]>
 
 const EMPTY: CspDirectives = {
   "script-src": [],
@@ -19,7 +19,7 @@ const EMPTY: CspDirectives = {
   "img-src": [],
   "font-src": [],
   "media-src": [],
-};
+}
 
 const CATALOG: Partial<Record<ProviderName, CspDirectives>> = {
   intercom: {
@@ -117,23 +117,23 @@ const CATALOG: Partial<Record<ProviderName, CspDirectives>> = {
     "font-src": [],
     "media-src": [],
   },
-};
+}
 
 export interface CspOptions {
   /** Include 'self' in each directive. Default: true. */
-  includeSelf?: boolean;
+  includeSelf?: boolean
   /** Override Chatwoot host for self-hosted directives. */
-  chatwootBaseUrl?: string;
+  chatwootBaseUrl?: string
 }
 
 export function cspDirectives(provider: ProviderName, options?: CspOptions): CspDirectives {
-  const includeSelf = options?.includeSelf ?? true;
-  const base = CATALOG[provider] ?? EMPTY;
+  const includeSelf = options?.includeSelf ?? true
+  const base = CATALOG[provider] ?? EMPTY
 
   if (provider === "chatwoot") {
-    const baseUrl = options?.chatwootBaseUrl?.replace(/\/+$/, "") ?? "https://app.chatwoot.com";
-    const host = new URL(baseUrl).host;
-    const wss = `wss://${host}/cable`;
+    const baseUrl = options?.chatwootBaseUrl?.replace(/\/+$/, "") ?? "https://app.chatwoot.com"
+    const host = new URL(baseUrl).host
+    const wss = `wss://${host}/cable`
     const directives: CspDirectives = {
       "script-src": [baseUrl],
       "connect-src": [baseUrl, wss],
@@ -142,33 +142,33 @@ export function cspDirectives(provider: ProviderName, options?: CspOptions): Csp
       "img-src": [baseUrl],
       "font-src": [baseUrl],
       "media-src": [baseUrl],
-    };
-    return withSelf(directives, includeSelf);
+    }
+    return withSelf(directives, includeSelf)
   }
 
-  return withSelf(base, includeSelf);
+  return withSelf(base, includeSelf)
 }
 
 function withSelf(directives: CspDirectives, includeSelf: boolean): CspDirectives {
-  if (!includeSelf) return directives;
-  const out = {} as CspDirectives;
+  if (!includeSelf) return directives
+  const out = {} as CspDirectives
   for (const key of Object.keys(directives) as CspDirectiveKey[]) {
-    out[key] = ["'self'", ...directives[key]];
+    out[key] = ["'self'", ...directives[key]]
   }
-  return out;
+  return out
 }
 
 export function toHeaderString(directives: CspDirectives): string {
-  const parts: string[] = [];
+  const parts: string[] = []
   for (const key of Object.keys(directives) as CspDirectiveKey[]) {
-    const values = directives[key];
-    if (values.length > 0) parts.push(`${key} ${values.join(" ")}`);
+    const values = directives[key]
+    if (values.length > 0) parts.push(`${key} ${values.join(" ")}`)
   }
-  return parts.join("; ");
+  return parts.join("; ")
 }
 
 export function mergeCsp(...sets: CspDirectives[]): CspDirectives {
-  const out = {} as CspDirectives;
+  const out = {} as CspDirectives
   const allKeys: CspDirectiveKey[] = [
     "script-src",
     "connect-src",
@@ -177,27 +177,27 @@ export function mergeCsp(...sets: CspDirectives[]): CspDirectives {
     "img-src",
     "font-src",
     "media-src",
-  ];
+  ]
   for (const key of allKeys) {
-    const merged = new Set<string>();
-    for (const set of sets) for (const v of set[key]) merged.add(v);
-    out[key] = [...merged];
+    const merged = new Set<string>()
+    for (const set of sets) for (const v of set[key]) merged.add(v)
+    out[key] = [...merged]
   }
-  return out;
+  return out
 }
 
 export function watchCspViolations(
   handler: (event: SecurityPolicyViolationEvent) => void,
 ): () => void {
-  if (typeof window === "undefined") return () => {};
-  const cast = handler as () => void;
-  window.addEventListener?.("securitypolicyviolation", cast);
-  return () => window?.removeEventListener?.("securitypolicyviolation", cast);
+  if (typeof window === "undefined") return () => {}
+  const cast = handler as () => void
+  window.addEventListener?.("securitypolicyviolation", cast)
+  return () => window?.removeEventListener?.("securitypolicyviolation", cast)
 }
 
 interface SecurityPolicyViolationEvent {
-  blockedURI: string;
-  violatedDirective: string;
-  effectiveDirective: string;
-  originalPolicy: string;
+  blockedURI: string
+  violatedDirective: string
+  effectiveDirective: string
+  originalPolicy: string
 }

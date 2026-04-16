@@ -12,7 +12,7 @@
 //        ])
 //   3. Load with `partytown: true`.
 
-import type { ProviderName } from "../_types.ts";
+import type { ProviderName } from "../_types.ts"
 
 const FORWARD: Partial<Record<ProviderName, readonly string[]>> = {
   intercom: ["Intercom", "intercomSettings"],
@@ -39,7 +39,7 @@ const FORWARD: Partial<Record<ProviderName, readonly string[]>> = {
   ],
   tidio: ["tidioChatApi"],
   sendbird: ["__sb_widget_settings"],
-};
+}
 
 /**
  * Returns the list of `forwardSettings` Partytown needs for a given provider.
@@ -47,9 +47,9 @@ const FORWARD: Partial<Record<ProviderName, readonly string[]>> = {
  * <PartytownScript forward={...} />.
  */
 export function partytownForward(...providers: ProviderName[]): string[] {
-  const out = new Set<string>();
-  for (const p of providers) for (const k of FORWARD[p] ?? []) out.add(k);
-  return [...out];
+  const out = new Set<string>()
+  for (const p of providers) for (const k of FORWARD[p] ?? []) out.add(k)
+  return [...out]
 }
 
 /**
@@ -57,5 +57,5 @@ export function partytownForward(...providers: ProviderName[]): string[] {
  * Partytown script tag's `data-config` attribute.
  */
 export function partytownConfig(...providers: ProviderName[]): { forward: string[] } {
-  return { forward: partytownForward(...providers) };
+  return { forward: partytownForward(...providers) }
 }

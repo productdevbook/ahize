@@ -28,16 +28,27 @@ swap providers by changing the import path.** Pre-boot calls are
 buffered. Identity verification is typed. SSR is a no-op. CSP is
 documented per provider.
 
-```diff
--import * as chat from "ahize/intercom";
--await chat.load({ appId: "abc" });
-+import * as chat from "ahize/crisp";
-+await chat.load({ websiteId: "uuid" });
+Today you're on Intercom:
 
-// every other line stays the same
-chat.identify({ id: "u1", email: "ada@example.com" });
-chat.track("plan_upgraded", { tier: "pro" });
-chat.show();
+```ts
+import * as chat from "ahize/intercom"
+
+await chat.load({ appId: "abc" })
+chat.identify({ id: "u1", email: "ada@example.com" })
+chat.track("plan_upgraded", { tier: "pro" })
+chat.show()
+```
+
+Tomorrow you switch to Crisp — only the import path and the `load()`
+options change:
+
+```ts
+import * as chat from "ahize/crisp"
+
+await chat.load({ websiteId: "uuid" })
+chat.identify({ id: "u1", email: "ada@example.com" })
+chat.track("plan_upgraded", { tier: "pro" })
+chat.show()
 ```
 
 ## Install
@@ -50,16 +61,16 @@ npm install ahize
 ## Hello, world
 
 ```ts
-import { load, identify, track, show } from "ahize/intercom";
+import { load, identify, track, show } from "ahize/intercom"
 
-await load({ appId: "abc123" });
+await load({ appId: "abc123" })
 await identify({
   id: "user_1",
   email: "ada@example.com",
   name: "Ada Lovelace",
-});
-await track("plan_upgraded", { tier: "pro" });
-await show();
+})
+await track("plan_upgraded", { tier: "pro" })
+await show()
 ```
 
 That's it. The Intercom CDN is injected, `boot` is fired, and your
@@ -100,14 +111,14 @@ await identify({
   id: "user_1",
   email: "ada@example.com",
   verification: { kind: "hmac", hash: process.env.INTERCOM_USER_HASH! },
-});
+})
 
 // HubSpot — JWT
 await identify({
   id: "user_1",
   email: "ada@example.com",
   verification: { kind: "jwt", token: serverIssuedJwt },
-});
+})
 
 // Zendesk Messenger — callback for token refresh on 401
 await identify({
@@ -116,7 +127,7 @@ await identify({
     kind: "callback",
     getToken: async () => fetchFreshJwtFromServer(),
   },
-});
+})
 ```
 
 Pass the wrong `kind` for a provider and you get a typed rejection — no
@@ -131,16 +142,16 @@ Workers without guards.
 
 ```ts
 // app/layout.tsx — no "use client" needed for the import itself
-import { load } from "ahize/intercom";
+import { load } from "ahize/intercom"
 
-await load({ appId: "..." }); // resolves to undefined on the server, no-op
+await load({ appId: "..." }) // resolves to undefined on the server, no-op
 ```
 
 If you want to be belt-and-braces sure no DOM code enters your SSR
 bundle, import the matching no-op stub:
 
 ```ts
-import { load, identify, track } from "ahize/server";
+import { load, identify, track } from "ahize/server"
 ```
 
 ## Framework adapters
@@ -151,16 +162,16 @@ no peer dependencies.
 ### Next.js (App Router)
 
 ```tsx
-"use client";
-import * as React from "react";
-import * as intercom from "ahize/intercom";
-import { createAhizeComponent } from "ahize/next";
-import { usePathname, useSearchParams } from "next/navigation";
+"use client"
+import * as React from "react"
+import * as intercom from "ahize/intercom"
+import { createAhizeComponent } from "ahize/next"
+import { usePathname, useSearchParams } from "next/navigation"
 
-const Ahize = createAhizeComponent(React, { usePathname, useSearchParams });
+const Ahize = createAhizeComponent(React, { usePathname, useSearchParams })
 
 export default function ChatBoot() {
-  return <Ahize provider={intercom} options={{ appId: "abc123" }} autoPageView />;
+  return <Ahize provider={intercom} options={{ appId: "abc123" }} autoPageView />
 }
 ```
 
@@ -173,9 +184,9 @@ tracking accurate.
 ```ts
 // app/plugins/ahize.client.ts   (Nuxt 4 default srcDir)
 // plugins/ahize.client.ts       (Nuxt 3, or Nuxt 4 with custom srcDir)
-import { defineNuxtPlugin } from "#app";
-import * as intercom from "ahize/intercom";
-import { createNuxtAhizePlugin } from "ahize/nuxt";
+import { defineNuxtPlugin } from "#app"
+import * as intercom from "ahize/intercom"
+import { createNuxtAhizePlugin } from "ahize/nuxt"
 
 export default defineNuxtPlugin(
   createNuxtAhizePlugin({
@@ -183,7 +194,7 @@ export default defineNuxtPlugin(
     options: { appId: "abc123" },
     autoPageView: true,
   }),
-);
+)
 ```
 
 The plugin & `defineNuxtPlugin` API is identical between Nuxt 3 and 4 —
@@ -193,23 +204,23 @@ only the default source directory changed (`app/` in Nuxt 4). Use
 ### React (any meta-framework)
 
 ```tsx
-import * as React from "react";
-import * as crisp from "ahize/crisp";
-import { createUseAhize } from "ahize/react";
+import * as React from "react"
+import * as crisp from "ahize/crisp"
+import { createUseAhize } from "ahize/react"
 
-const useAhize = createUseAhize(React);
+const useAhize = createUseAhize(React)
 
 function App() {
   const { isReady, identify, show } = useAhize({
     provider: crisp,
     options: { websiteId: "..." },
-  });
+  })
 
   return (
     <button disabled={!isReady} onClick={() => show()}>
       Open chat
     </button>
-  );
+  )
 }
 ```
 
@@ -224,31 +235,31 @@ pass the framework primitives in.
 `load()` never fires on import. Pair it with your CMP:
 
 ```ts
-import * as intercom from "ahize/intercom";
+import * as intercom from "ahize/intercom"
 
 OneTrust.OnConsentChanged(() => {
   if (OnetrustActiveGroups.includes("C0004")) {
-    intercom.load({ appId: "abc123" });
+    intercom.load({ appId: "abc123" })
   } else {
-    intercom.destroy(); // removes script, globals, cookies
+    intercom.destroy() // removes script, globals, cookies
   }
-});
+})
 ```
 
 Defer strategies for LCP-sensitive pages:
 
 ```ts
-load({ appId: "...", defer: "idle" }); // requestIdleCallback
-load({ appId: "...", defer: "interaction" }); // first pointerdown/scroll/keydown
-load({ appId: "...", defer: "manual" }); // never auto-injects
-load({ appId: "...", consent: hasConsent }); // gate behind a flag
+load({ appId: "...", defer: "idle" }) // requestIdleCallback
+load({ appId: "...", defer: "interaction" }) // first pointerdown/scroll/keydown
+load({ appId: "...", defer: "manual" }) // never auto-injects
+load({ appId: "...", consent: hasConsent }) // gate behind a flag
 ```
 
 EU region selection is built in:
 
 ```ts
-intercom.load({ appId: "...", region: "eu" }); // → api-iam.eu.intercom.io
-hubspot.load({ portalId: "...", region: "eu1" }); // → js-eu1.hs-scripts.com
+intercom.load({ appId: "...", region: "eu" }) // → api-iam.eu.intercom.io
+hubspot.load({ portalId: "...", region: "eu1" }) // → js-eu1.hs-scripts.com
 ```
 
 ## CSP
@@ -258,31 +269,31 @@ exact directive list per provider, including the WSS endpoints
 competitor wrappers always forget:
 
 ```ts
-import { cspDirectives, mergeCsp, toHeaderString } from "ahize/csp";
+import { cspDirectives, mergeCsp, toHeaderString } from "ahize/csp"
 
 const policy = mergeCsp(
   cspDirectives("intercom"),
   cspDirectives("crisp"),
   cspDirectives("chatwoot", { chatwootBaseUrl: "https://chat.acme.com" }),
-);
+)
 
-response.setHeader("Content-Security-Policy", toHeaderString(policy));
+response.setHeader("Content-Security-Policy", toHeaderString(policy))
 ```
 
 Pass a nonce through `load()` and the same nonce through your CSP:
 
 ```ts
-load({ appId: "...", nonce: cspNonce });
+load({ appId: "...", nonce: cspNonce })
 ```
 
 Want to catch violations in dev?
 
 ```ts
-import { watchCspViolations } from "ahize/csp";
+import { watchCspViolations } from "ahize/csp"
 
 watchCspViolations((event) => {
-  console.warn("CSP blocked", event.blockedURI, "for", event.violatedDirective);
-});
+  console.warn("CSP blocked", event.blockedURI, "for", event.violatedDirective)
+})
 ```
 
 ## Facade mode
@@ -291,13 +302,13 @@ For pages where chat is below the fold and LCP matters, mount a tiny
 launcher. The real provider boots on hover or click:
 
 ```ts
-import * as intercom from "ahize/intercom";
-import { mountFacade } from "ahize/facade";
+import * as intercom from "ahize/intercom"
+import { mountFacade } from "ahize/facade"
 
 mountFacade({
   provider: "intercom",
   boot: () => intercom.load({ appId: "abc123" }),
-});
+})
 ```
 
 Under 2 KB. No CSS file, no framework. The launcher removes itself once
@@ -308,12 +319,12 @@ the real widget is ready.
 Capability matrix is queryable so you don't hard-code branches:
 
 ```ts
-import { capabilities, supports } from "ahize/capabilities";
+import { capabilities, supports } from "ahize/capabilities"
 
 if (supports("zendesk", "callback")) {
-  await identify({ id: "u1", verification: { kind: "callback", getToken } });
+  await identify({ id: "u1", verification: { kind: "callback", getToken } })
 } else if (supports("zendesk", "jwt")) {
-  await identify({ id: "u1", verification: { kind: "jwt", token } });
+  await identify({ id: "u1", verification: { kind: "jwt", token } })
 }
 ```
 
@@ -323,9 +334,9 @@ When the snippet refuses to load, `ahize/diagnostics` probes the CDN and
 returns a hint:
 
 ```ts
-import { diagnose } from "ahize/diagnostics";
+import { diagnose } from "ahize/diagnostics"
 
-const result = await diagnose("intercom", { appId: "abc123" });
+const result = await diagnose("intercom", { appId: "abc123" })
 //   { ok: false, status: 404, hint: "Snippet not found — typo in id…" }
 ```
 

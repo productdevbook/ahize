@@ -8,7 +8,10 @@ describe("intercom (browser)", () => {
     delete (globalThis as any).Intercom;
     // biome-ignore lint/suspicious/noExplicitAny: test shim
     delete (globalThis as any).intercomSettings;
-    document.querySelectorAll("script").forEach((s) => s.remove());
+    const scripts = document.querySelectorAll("script");
+    for (let i = 0; i < scripts.length; i++) {
+      (scripts[i] as { remove(): void } | undefined)?.remove();
+    }
   });
 
   it("queues calls made before load() resolves", async () => {

@@ -1,7 +1,14 @@
 import { createIdentityStore } from "../_identity.ts";
-import { injectScript, isBrowser } from "../_loader.ts";
+import { createLifecycle, hashConfig } from "../_lifecycle.ts";
+import { injectScript, isBrowser, removeScript } from "../_loader.ts";
 import { createQueue } from "../_queue.ts";
-import type { Identity, IdentityListener, IdentityState, LoadOptions } from "../_types.ts";
+import type {
+  EventMetadata,
+  Identity,
+  IdentityListener,
+  IdentityState,
+  LoadOptions,
+} from "../_types.ts";
 
 interface ChatwootSDK {
   run(options: { websiteToken: string; baseUrl: string }): void;
@@ -10,9 +17,14 @@ interface ChatwootSDK {
 interface ChatwootAPI {
   setUser(identifier: string, user: Record<string, unknown>): void;
   setCustomAttributes(attrs: Record<string, unknown>): void;
+  setConversationCustomAttributes?(attrs: Record<string, unknown>): void;
   setLabel(label: string): void;
+  removeLabel?(label: string): void;
+  setLocale?(locale: string): void;
   toggle(state?: "open" | "close"): void;
+  toggleBubbleVisibility?(state: "show" | "hide"): void;
   reset(): void;
+  isOpen?: boolean;
 }
 
 interface ChatwootWindow {
@@ -27,6 +39,17 @@ function w(): ChatwootWindow {
 
 const queue = createQueue<ChatwootAPI>();
 const store = createIdentityStore();
+const lifecycle = createLifecycle();
+let currentToken: string | undefined;
+let currentBaseUrl: string | undefined;
+let readyListener: (() => void) | undefined;
+
+function normalizeBaseUrl(url: string): string {
+  let u = url.trim();
+  if (!/^https?:\/\//.test(u)) u = `https://${u}`;
+  while (u.endsWith("/")) u = u.slice(0, -1);
+  return u;
+}
 
 export interface ChatwootLoadOptions extends LoadOptions {
   websiteToken: string;
@@ -36,25 +59,39 @@ export interface ChatwootLoadOptions extends LoadOptions {
 
 export async function load(options: ChatwootLoadOptions): Promise<void> {
   if (!isBrowser()) return;
-  if (queue.isReady()) return;
+  const baseUrl = normalizeBaseUrl(options.baseUrl ?? "https://app.chatwoot.com");
+  const h = hashConfig({ websiteToken: options.websiteToken, baseUrl });
+  if (lifecycle.state() === "ready" && lifecycle.configHash() === h) return;
+  if (lifecycle.configHash() && lifecycle.configHash() !== h) await destroy();
 
-  const baseUrl = options.baseUrl ?? "https://app.chatwoot.com";
+  lifecycle.transition("loading");
+  lifecycle.setConfigHash(h);
+  currentToken = options.websiteToken;
+  currentBaseUrl = baseUrl;
   if (options.settings) w().chatwootSettings = options.settings;
 
-  const onReady = (): void => {
+  readyListener = () => {
     const api = w().$chatwoot;
     if (api) queue.ready(api);
   };
-  window.addEventListener("chatwoot:ready", onReady, { once: true });
+  window?.addEventListener("chatwoot:ready", readyListener, { once: true });
 
-  await injectScript({
-    id: "ahize-chatwoot",
-    src: `${baseUrl}/packs/js/sdk.js`,
-    defer: true,
-    async: false,
-  });
+  try {
+    await injectScript({
+      id: "ahize-chatwoot",
+      src: `${baseUrl}/packs/js/sdk.js`,
+      defer: true,
+      async: false,
+      nonce: options.nonce,
+    });
+  } catch (error) {
+    lifecycle.transition("idle");
+    lifecycle.clearConfigHash();
+    throw error;
+  }
 
   w().chatwootSDK?.run({ websiteToken: options.websiteToken, baseUrl });
+  lifecycle.transition("ready");
 }
 
 export function identify(identity: Identity): Promise<void> {
@@ -73,15 +110,39 @@ export function identify(identity: Identity): Promise<void> {
     if (identity.verification?.kind === "hmac") {
       user["identifier_hash"] = identity.verification.hash;
     }
+    if (identity.attributes) Object.assign(user, identity.attributes);
     api.setUser(id, user);
   });
 }
 
-export function track(event: string, metadata?: Record<string, unknown>): Promise<void> {
+export function track<T extends EventMetadata = EventMetadata>(
+  event: string,
+  metadata?: T,
+): Promise<void> {
   if (!isBrowser()) return Promise.resolve();
   return queue.enqueue((api) => {
     api.setCustomAttributes({ [event]: metadata ?? true });
   });
+}
+
+export function setLabel(label: string): Promise<void> {
+  if (!isBrowser()) return Promise.resolve();
+  return queue.enqueue((api) => api.setLabel(label));
+}
+
+export function removeLabel(label: string): Promise<void> {
+  if (!isBrowser()) return Promise.resolve();
+  return queue.enqueue((api) => api.removeLabel?.(label));
+}
+
+export function setLocale(locale: string): Promise<void> {
+  if (!isBrowser()) return Promise.resolve();
+  return queue.enqueue((api) => api.setLocale?.(locale));
+}
+
+export function setBubbleVisibility(state: "show" | "hide"): Promise<void> {
+  if (!isBrowser()) return Promise.resolve();
+  return queue.enqueue((api) => api.toggleBubbleVisibility?.(state));
 }
 
 export function show(): Promise<void> {
@@ -100,11 +161,44 @@ export function hide(): Promise<void> {
 
 export function shutdown(): Promise<void> {
   if (!isBrowser()) return Promise.resolve();
-  return queue.enqueue((api) => {
-    api.reset();
-    store.reset();
-    queue.reset();
-  });
+  return queue
+    .enqueue((api) => {
+      if (api.isOpen) {
+        console.warn(
+          "[ahize/chatwoot] shutdown() called while widget is open; closing before reset to avoid state corruption.",
+        );
+        api.toggle("close");
+      }
+      api.reset();
+    })
+    .then(() => {
+      store.reset();
+      lifecycle.transition("shutdown");
+    });
+}
+
+export async function destroy(): Promise<void> {
+  if (!isBrowser()) return;
+  await shutdown().catch(() => undefined);
+  removeScript("ahize-chatwoot");
+  if (readyListener && window) {
+    window.removeEventListener?.("chatwoot:ready", readyListener);
+    readyListener = undefined;
+  }
+  const g = w();
+  Reflect.deleteProperty(g, "chatwootSDK");
+  Reflect.deleteProperty(g, "$chatwoot");
+  Reflect.deleteProperty(g, "chatwootSettings");
+  queue.reset();
+  store.reset();
+  currentToken = undefined;
+  currentBaseUrl = undefined;
+  lifecycle.clearConfigHash();
+  lifecycle.transition("idle");
+}
+
+export function getConfig(): { websiteToken?: string; baseUrl?: string } {
+  return { websiteToken: currentToken, baseUrl: currentBaseUrl };
 }
 
 export function getIdentity(): IdentityState {
@@ -113,4 +207,12 @@ export function getIdentity(): IdentityState {
 
 export function onIdentityChange(listener: IdentityListener): () => void {
   return store.onChange(listener);
+}
+
+export function isReady(): boolean {
+  return lifecycle.state() === "ready";
+}
+
+export function state(): "idle" | "loading" | "ready" | "shutdown" {
+  return lifecycle.state();
 }

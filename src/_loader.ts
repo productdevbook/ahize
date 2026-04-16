@@ -5,6 +5,7 @@ export interface InjectOptions {
   id?: string;
   async?: boolean;
   defer?: boolean;
+  nonce?: string;
 }
 
 const pending = new Map<string, Promise<void>>();
@@ -26,6 +27,7 @@ export function injectScript(opts: InjectOptions): Promise<void> {
     script.async = opts.async ?? true;
     script.defer = opts.defer ?? false;
     if (opts.id) script.id = opts.id;
+    if (opts.nonce) script.nonce = opts.nonce;
 
     script.addEventListener("load", () => resolve());
     script.addEventListener("error", () =>
@@ -46,4 +48,17 @@ export function injectScript(opts: InjectOptions): Promise<void> {
 
   pending.set(key, promise);
   return promise;
+}
+
+export function removeScript(id: string): void {
+  if (!isBrowser()) return;
+  pending.delete(id);
+  const el = document.getElementById(id);
+  el?.remove();
+}
+
+export function readCspNonce(): string | undefined {
+  if (!isBrowser()) return undefined;
+  const current = document.currentScript;
+  return current?.nonce || undefined;
 }

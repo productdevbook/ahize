@@ -1,6 +1,13 @@
 import { createIdentityStore } from "../_identity.ts";
-import { injectScript, isBrowser } from "../_loader.ts";
-import type { Identity, IdentityListener, IdentityState, LoadOptions } from "../_types.ts";
+import { createLifecycle, hashConfig } from "../_lifecycle.ts";
+import { injectScript, isBrowser, removeScript } from "../_loader.ts";
+import type {
+  EventMetadata,
+  Identity,
+  IdentityListener,
+  IdentityState,
+  LoadOptions,
+} from "../_types.ts";
 
 type CrispCmd = unknown[];
 
@@ -26,6 +33,7 @@ function bus(): CrispArray {
 }
 
 const store = createIdentityStore();
+const lifecycle = createLifecycle();
 
 export interface CrispLoadOptions extends LoadOptions {
   websiteId: string;
@@ -35,13 +43,30 @@ export interface CrispLoadOptions extends LoadOptions {
 
 export async function load(options: CrispLoadOptions): Promise<void> {
   if (!isBrowser()) return;
+  const h = hashConfig({ websiteId: options.websiteId, tokenId: options.tokenId });
+  if (lifecycle.state() === "ready" && lifecycle.configHash() === h) return;
+  if (lifecycle.configHash() && lifecycle.configHash() !== h) await destroy();
+
+  lifecycle.transition("loading");
+  lifecycle.setConfigHash(h);
   bus();
   w().CRISP_WEBSITE_ID = options.websiteId;
   if (options.tokenId) w().CRISP_TOKEN_ID = options.tokenId;
   if (options.locale) {
     w().CRISP_RUNTIME_CONFIG = { ...w().CRISP_RUNTIME_CONFIG, locale: options.locale };
   }
-  await injectScript({ id: "ahize-crisp", src: "https://client.crisp.chat/l.js" });
+  try {
+    await injectScript({
+      id: "ahize-crisp",
+      src: "https://client.crisp.chat/l.js",
+      nonce: options.nonce,
+    });
+  } catch (error) {
+    lifecycle.transition("idle");
+    lifecycle.clearConfigHash();
+    throw error;
+  }
+  lifecycle.transition("ready");
 }
 
 export function identify(identity: Identity): Promise<void> {
@@ -58,10 +83,18 @@ export function identify(identity: Identity): Promise<void> {
   }
   if (identity.name) q.push(["set", "user:nickname", [identity.name]]);
   if (identity.phone) q.push(["set", "user:phone", [identity.phone]]);
+  if (identity.attributes) {
+    const pairs: unknown[][] = [];
+    for (const [k, v] of Object.entries(identity.attributes)) pairs.push([k, v]);
+    if (pairs.length > 0) q.push(["set", "session:data", [pairs]]);
+  }
   return Promise.resolve();
 }
 
-export function track(event: string, metadata?: Record<string, unknown>): Promise<void> {
+export function track<T extends EventMetadata = EventMetadata>(
+  event: string,
+  metadata?: T,
+): Promise<void> {
   if (!isBrowser()) return Promise.resolve();
   bus().push(["set", "session:event", [[[event, metadata]]]]);
   return Promise.resolve();
@@ -84,7 +117,22 @@ export function shutdown(): Promise<void> {
   if (!isBrowser()) return Promise.resolve();
   bus().push(["do", "session:reset"]);
   store.reset();
+  lifecycle.transition("shutdown");
   return Promise.resolve();
+}
+
+export async function destroy(): Promise<void> {
+  if (!isBrowser()) return;
+  await shutdown().catch(() => undefined);
+  removeScript("ahize-crisp");
+  const g = w();
+  Reflect.deleteProperty(g, "$crisp");
+  Reflect.deleteProperty(g, "CRISP_WEBSITE_ID");
+  Reflect.deleteProperty(g, "CRISP_TOKEN_ID");
+  Reflect.deleteProperty(g, "CRISP_RUNTIME_CONFIG");
+  store.reset();
+  lifecycle.clearConfigHash();
+  lifecycle.transition("idle");
 }
 
 export function getIdentity(): IdentityState {
@@ -93,4 +141,12 @@ export function getIdentity(): IdentityState {
 
 export function onIdentityChange(listener: IdentityListener): () => void {
   return store.onChange(listener);
+}
+
+export function isReady(): boolean {
+  return lifecycle.state() === "ready";
+}
+
+export function state(): "idle" | "loading" | "ready" | "shutdown" {
+  return lifecycle.state();
 }

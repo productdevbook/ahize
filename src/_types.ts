@@ -1,10 +1,20 @@
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | readonly JsonValue[]
+  | { readonly [key: string]: JsonValue };
+
+export type EventMetadata = Readonly<Record<string, JsonValue>>;
+
 export interface Visitor {
   id?: string;
   email?: string;
   name?: string;
   phone?: string;
   createdAt?: number;
-  [key: string]: unknown;
+  attributes?: EventMetadata;
 }
 
 export type Verification =
@@ -20,12 +30,29 @@ export type IdentityState = { kind: "anonymous" } | { kind: "identified"; identi
 
 export type IdentityListener = (next: IdentityState, prev: IdentityState) => void;
 
-export interface LoadOptions {
+export interface BaseLoadOptions {
+  nonce?: string;
+  autoShow?: boolean;
+}
+
+export interface LoadOptions extends BaseLoadOptions {
   appId?: string;
   key?: string;
   id?: string;
   src?: string;
-  autoShow?: boolean;
 }
 
-export type ProviderName = "intercom" | "crisp" | "tawk" | "zendesk" | "hubspot" | "chatwoot";
+export type ProviderName =
+  | "intercom"
+  | "crisp"
+  | "tawk"
+  | "zendesk"
+  | "hubspot"
+  | "chatwoot"
+  | "livechat"
+  | "drift"
+  | "freshchat"
+  | "olark"
+  | "userlike"
+  | "helpscout"
+  | "smartsupp";

@@ -18,8 +18,11 @@ describe("providers", () => {
         expect(typeof provider.show).toBe("function");
         expect(typeof provider.hide).toBe("function");
         expect(typeof provider.shutdown).toBe("function");
+        expect(typeof provider.destroy).toBe("function");
         expect(typeof provider.getIdentity).toBe("function");
         expect(typeof provider.onIdentityChange).toBe("function");
+        expect(typeof provider.isReady).toBe("function");
+        expect(typeof provider.state).toBe("function");
       });
 
       it("is SSR-safe on load()", async () => {
@@ -47,6 +50,15 @@ describe("providers", () => {
 
       it("starts with anonymous identity", () => {
         expect(provider.getIdentity()).toEqual({ kind: "anonymous" });
+      });
+
+      it("starts in idle state, not ready", () => {
+        expect(provider.state()).toBe("idle");
+        expect(provider.isReady()).toBe(false);
+      });
+
+      it("destroy() is SSR-safe", async () => {
+        await expect(provider.destroy()).resolves.toBeUndefined();
       });
     });
   }

@@ -42,9 +42,7 @@ export interface UseAhizeOptions<T extends LoadOptions> {
   destroyOnUnmount?: boolean
 }
 
-export type UseAhizeHook = <T extends LoadOptions>(
-  opts: UseAhizeOptions<T>,
-) => UseAhizeReturn
+export type UseAhizeHook = <T extends LoadOptions>(opts: UseAhizeOptions<T>) => UseAhizeReturn
 
 export function createUseAhize(Vue: VueLike): UseAhizeHook {
   return function useAhize<T extends LoadOptions>(opts: UseAhizeOptions<T>): UseAhizeReturn {

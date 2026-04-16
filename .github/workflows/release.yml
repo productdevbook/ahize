@@ -52,7 +52,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: 🦕 Publish to JSR (OIDC)
-        run: npx jsr publish --allow-slow-types
+        run: npx jsr publish
 
       - name: 📝 Generate changelog
         run: pnpm dlx changelogithub

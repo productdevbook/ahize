@@ -40,7 +40,9 @@ export interface UseAhizeReturn {
   pageView: AhizeProvider["pageView"]
 }
 
-export function createUseAhize(React: ReactLike) {
+export type AhizeReactHook = <T extends LoadOptions>(opts: UseAhizeOptions<T>) => UseAhizeReturn
+
+export function createUseAhize(React: ReactLike): AhizeReactHook {
   return function useAhize<T extends LoadOptions>(opts: UseAhizeOptions<T>): UseAhizeReturn {
     const { provider, options, destroyOnUnmount = false } = opts
     const [identity, setIdentity] = React.useState<IdentityState>(provider.getIdentity())
@@ -75,5 +77,3 @@ export function createUseAhize(React: ReactLike) {
     }
   }
 }
-
-export type AhizeReactHook = ReturnType<typeof createUseAhize>

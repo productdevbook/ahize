@@ -49,8 +49,13 @@ export interface NextAhizeOptions<T extends LoadOptions> {
   autoPageView?: boolean
 }
 
-export function createAhizeComponent(React: ReactLike, nextNav?: NextAppRouterHooks) {
-  return function Ahize<T extends LoadOptions>(props: NextAhizeOptions<T>) {
+export type NextAhizeComponent = <T extends LoadOptions>(props: NextAhizeOptions<T>) => null
+
+export function createAhizeComponent(
+  React: ReactLike,
+  nextNav?: NextAppRouterHooks,
+): NextAhizeComponent {
+  return function Ahize<T extends LoadOptions>(props: NextAhizeOptions<T>): null {
     React.useEffect(() => {
       let mounted = true
       props.provider.load(props.options).then(() => {

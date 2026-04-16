@@ -36,8 +36,12 @@ export interface NuxtAhizeOptions<T extends LoadOptions> {
   provide?: boolean
 }
 
-export function createNuxtAhizePlugin<T extends LoadOptions>(opts: NuxtAhizeOptions<T>) {
-  return async (nuxtApp: NuxtPluginContext) => {
+export type NuxtAhizePlugin = (nuxtApp: NuxtPluginContext) => Promise<void>
+
+export function createNuxtAhizePlugin<T extends LoadOptions>(
+  opts: NuxtAhizeOptions<T>,
+): NuxtAhizePlugin {
+  return async (nuxtApp: NuxtPluginContext): Promise<void> => {
     if (typeof window === "undefined") return
     await opts.provider.load(opts.options)
     if (opts.identity) void opts.provider.identify(opts.identity)

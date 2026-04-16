@@ -28,8 +28,10 @@ export interface RemixAhizeOptions<T extends LoadOptions> {
   autoPageView?: boolean
 }
 
-export function createRemixAhize(React: ReactLike, remix: RemixHooks) {
-  return function useAhize<T extends LoadOptions>(opts: RemixAhizeOptions<T>) {
+export type RemixAhizeHook = <T extends LoadOptions>(opts: RemixAhizeOptions<T>) => void
+
+export function createRemixAhize(React: ReactLike, remix: RemixHooks): RemixAhizeHook {
+  return function useAhize<T extends LoadOptions>(opts: RemixAhizeOptions<T>): void {
     React.useEffect(() => {
       opts.provider.load(opts.options).then(() => {
         if (opts.identity) void opts.provider.identify(opts.identity)

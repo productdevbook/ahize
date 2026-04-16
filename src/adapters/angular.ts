@@ -12,22 +12,29 @@ interface AhizeProvider {
   getIdentity(): IdentityState
 }
 
+interface RouterSubscription {
+  unsubscribe(): void
+}
+
 interface RouterLike {
   events: {
-    subscribe: (cb: (event: { url?: string; constructor: { name: string } }) => void) => {
-      unsubscribe(): void
-    }
+    subscribe: (
+      cb: (event: { url?: string; constructor: { name: string } }) => void,
+    ) => RouterSubscription
   }
 }
 
 export class AhizeAngularService<T extends LoadOptions> {
-  private subscription: { unsubscribe(): void } | undefined
+  private readonly provider: AhizeProvider
+  private readonly options: T
+  private readonly router: RouterLike | undefined
+  private subscription: RouterSubscription | undefined
 
-  constructor(
-    private readonly provider: AhizeProvider,
-    private readonly options: T,
-    private readonly router?: RouterLike,
-  ) {}
+  constructor(provider: AhizeProvider, options: T, router?: RouterLike) {
+    this.provider = provider
+    this.options = options
+    this.router = router
+  }
 
   async init(identity?: Identity): Promise<void> {
     if (typeof window === "undefined") return

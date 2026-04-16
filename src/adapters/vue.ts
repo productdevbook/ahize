@@ -16,18 +16,38 @@ interface AhizeProvider {
   isReady(): boolean
 }
 
+interface VueRef<T> {
+  value: T
+}
+
 interface VueLike {
-  ref<T>(initial: T): { value: T }
+  ref<T>(initial: T): VueRef<T>
   onMounted(cb: () => void): void
   onUnmounted(cb: () => void): void
 }
 
-export function createUseAhize(Vue: VueLike) {
-  return function useAhize<T extends LoadOptions>(opts: {
-    provider: AhizeProvider
-    options: T
-    destroyOnUnmount?: boolean
-  }) {
+export interface UseAhizeReturn {
+  isReady: VueRef<boolean>
+  identity: VueRef<IdentityState>
+  identify: (identity: Identity) => Promise<void>
+  show: () => Promise<void>
+  hide: () => Promise<void>
+  shutdown: () => Promise<void>
+  pageView: (info?: { path?: string; locale?: string }) => Promise<void>
+}
+
+export interface UseAhizeOptions<T extends LoadOptions> {
+  provider: AhizeProvider
+  options: T
+  destroyOnUnmount?: boolean
+}
+
+export type UseAhizeHook = <T extends LoadOptions>(
+  opts: UseAhizeOptions<T>,
+) => UseAhizeReturn
+
+export function createUseAhize(Vue: VueLike): UseAhizeHook {
+  return function useAhize<T extends LoadOptions>(opts: UseAhizeOptions<T>): UseAhizeReturn {
     const isReady = Vue.ref(opts.provider.isReady())
     const identity = Vue.ref<IdentityState>(opts.provider.getIdentity())
     let off: (() => void) | undefined

@@ -51,9 +51,8 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: 🦕 Publish to JSR
-        run: pnpm dlx jsr publish --allow-slow-types
-        continue-on-error: true
+      - name: 🦕 Publish to JSR (OIDC)
+        run: npx jsr publish --allow-slow-types
 
       - name: 📝 Generate changelog
         run: pnpm dlx changelogithub

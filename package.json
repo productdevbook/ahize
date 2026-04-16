@@ -72,6 +72,54 @@
       "types": "./dist/providers/chatwoot.d.mts",
       "default": "./dist/providers/chatwoot.mjs"
     },
+    "./livechat": {
+      "types": "./dist/providers/livechat.d.mts",
+      "default": "./dist/providers/livechat.mjs"
+    },
+    "./drift": {
+      "types": "./dist/providers/drift.d.mts",
+      "default": "./dist/providers/drift.mjs"
+    },
+    "./freshchat": {
+      "types": "./dist/providers/freshchat.d.mts",
+      "default": "./dist/providers/freshchat.mjs"
+    },
+    "./olark": {
+      "types": "./dist/providers/olark.d.mts",
+      "default": "./dist/providers/olark.mjs"
+    },
+    "./userlike": {
+      "types": "./dist/providers/userlike.d.mts",
+      "default": "./dist/providers/userlike.mjs"
+    },
+    "./helpscout": {
+      "types": "./dist/providers/helpscout.d.mts",
+      "default": "./dist/providers/helpscout.mjs"
+    },
+    "./smartsupp": {
+      "types": "./dist/providers/smartsupp.d.mts",
+      "default": "./dist/providers/smartsupp.mjs"
+    },
+    "./liveagent": {
+      "types": "./dist/providers/liveagent.d.mts",
+      "default": "./dist/providers/liveagent.mjs"
+    },
+    "./gist": {
+      "types": "./dist/providers/gist.d.mts",
+      "default": "./dist/providers/gist.mjs"
+    },
+    "./jivochat": {
+      "types": "./dist/providers/jivochat.d.mts",
+      "default": "./dist/providers/jivochat.mjs"
+    },
+    "./tidio": {
+      "types": "./dist/providers/tidio.d.mts",
+      "default": "./dist/providers/tidio.mjs"
+    },
+    "./sendbird": {
+      "types": "./dist/providers/sendbird.d.mts",
+      "default": "./dist/providers/sendbird.mjs"
+    },
     "./server": {
       "types": "./dist/server.d.mts",
       "default": "./dist/server.mjs"

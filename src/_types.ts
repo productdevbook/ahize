@@ -69,4 +69,9 @@ export type ProviderName =
   | "olark"
   | "userlike"
   | "helpscout"
-  | "smartsupp";
+  | "smartsupp"
+  | "liveagent"
+  | "gist"
+  | "jivochat"
+  | "tidio"
+  | "sendbird";

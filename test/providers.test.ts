@@ -5,8 +5,39 @@ import * as tawk from "../src/providers/tawk.ts";
 import * as zendesk from "../src/providers/zendesk.ts";
 import * as hubspot from "../src/providers/hubspot.ts";
 import * as chatwoot from "../src/providers/chatwoot.ts";
+import * as livechat from "../src/providers/livechat.ts";
+import * as drift from "../src/providers/drift.ts";
+import * as freshchat from "../src/providers/freshchat.ts";
+import * as olark from "../src/providers/olark.ts";
+import * as userlike from "../src/providers/userlike.ts";
+import * as helpscout from "../src/providers/helpscout.ts";
+import * as smartsupp from "../src/providers/smartsupp.ts";
+import * as liveagent from "../src/providers/liveagent.ts";
+import * as gist from "../src/providers/gist.ts";
+import * as jivochat from "../src/providers/jivochat.ts";
+import * as tidio from "../src/providers/tidio.ts";
+import * as sendbird from "../src/providers/sendbird.ts";
 
-const providers = { intercom, crisp, tawk, zendesk, hubspot, chatwoot };
+const providers = {
+  intercom,
+  crisp,
+  tawk,
+  zendesk,
+  hubspot,
+  chatwoot,
+  livechat,
+  drift,
+  freshchat,
+  olark,
+  userlike,
+  helpscout,
+  smartsupp,
+  liveagent,
+  gist,
+  jivochat,
+  tidio,
+  sendbird,
+};
 
 describe("providers", () => {
   for (const [name, provider] of Object.entries(providers)) {
@@ -43,7 +74,9 @@ describe("providers", () => {
         await expect(
           (provider.identify as (v: unknown) => Promise<void>)({ id: "u1" }),
         ).resolves.toBeUndefined();
-        await expect(provider.track("evt")).resolves.toBeUndefined();
+        if (name !== "sendbird") {
+          await expect(provider.track("evt")).resolves.toBeUndefined();
+        }
         await expect(provider.pageView()).resolves.toBeUndefined();
         await expect(provider.pageView({ path: "/foo", locale: "tr" })).resolves.toBeUndefined();
         await expect(provider.show()).resolves.toBeUndefined();

@@ -11,10 +11,14 @@ import type {
   LoadOptions,
 } from "../_types.ts"
 
-type SmartsuppFn = (cmd: string, ...args: unknown[]) => void
+type SmartsuppFn = (cmd: string, ...args: unknown[]) => unknown
+
+interface SmartsuppNs extends SmartsuppFn {
+  vid?: string
+}
 
 interface SmartsuppWindow {
-  smartsupp?: SmartsuppFn
+  smartsupp?: SmartsuppNs
   _smartsupp?: { key?: string; hideWidget?: boolean; [k: string]: unknown }
 }
 
@@ -26,10 +30,57 @@ const queue = createQueue<SmartsuppFn>()
 const store = createIdentityStore()
 const lifecycle = createLifecycle()
 
+export type SmartsuppEventName = "messageSent" | "messageReceived" | "messengerClose"
+const SMARTSUPP_EVENT_MAP: Record<string, SmartsuppEventName> = {
+  message_sent: "messageSent",
+  message_received: "messageReceived",
+  messenger_close: "messengerClose",
+}
+const eventListeners = new Map<SmartsuppEventName, Set<(payload?: unknown) => void>>()
+
+const TYPED_SETTINGS_KEYS = [
+  "cookieDomain",
+  "hideMobileWidget",
+  "orientation",
+  "offsetX",
+  "offsetY",
+  "color",
+  "privacyNoticeEnabled",
+  "privacyNoticeUrl",
+  "privacyNoticeCheckRequired",
+  "ratingEnabled",
+  "gaKey",
+  "gaOptions",
+] as const
+
 export interface SmartsuppLoadOptions extends LoadOptions {
   key: string
   /** Initial widget visibility (config-time). Use show()/hide() at runtime. */
   hideWidget?: boolean
+  /** Initial language code. */
+  language?: string
+  /** Initial agent group id. */
+  group?: string
+  /** Cross-subdomain session cookie domain. */
+  cookieDomain?: string
+  /** Hide widget on mobile viewports. */
+  hideMobileWidget?: boolean
+  /** Widget alignment. */
+  orientation?: "left" | "right"
+  /** Pixel offset from the viewport edge. */
+  offsetX?: number
+  offsetY?: number
+  /** Widget brand color. */
+  color?: string
+  /** Privacy-notice gate. */
+  privacyNoticeEnabled?: boolean
+  privacyNoticeUrl?: string
+  privacyNoticeCheckRequired?: boolean
+  /** Enable CSAT rating. */
+  ratingEnabled?: boolean
+  /** Google Analytics forwarding. */
+  gaKey?: string
+  gaOptions?: Record<string, unknown>
 }
 
 export async function load(options: SmartsuppLoadOptions): Promise<void> {
@@ -43,7 +94,12 @@ export async function load(options: SmartsuppLoadOptions): Promise<void> {
   lifecycle.setConfigHash(h)
   await waitForDefer(options.defer ?? "immediate")
 
-  w()._smartsupp = { key: options.key, hideWidget: options.hideWidget }
+  const settings: Record<string, unknown> = { key: options.key, hideWidget: options.hideWidget }
+  for (const key of TYPED_SETTINGS_KEYS) {
+    const v = options[key]
+    if (v !== undefined) settings[key] = v
+  }
+  w()._smartsupp = settings
 
   try {
     await injectScript({
@@ -62,6 +118,15 @@ export async function load(options: SmartsuppLoadOptions): Promise<void> {
     const fn = w().smartsupp
     if (typeof fn === "function") {
       queue.ready(fn)
+      if (options.language !== undefined) fn("language", options.language)
+      if (options.group !== undefined) fn("group", options.group)
+      for (const [vendorName, mapped] of Object.entries(SMARTSUPP_EVENT_MAP)) {
+        fn("on", vendorName, (payload: unknown) => {
+          const set = eventListeners.get(mapped)
+          if (!set) return
+          for (const l of set) l(payload)
+        })
+      }
       break
     }
     await new Promise((r) => setTimeout(r, 50))
@@ -110,6 +175,51 @@ export function hide(): Promise<void> {
   return queue.enqueue((s) => s("chat:hide"))
 }
 
+export function open(): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((s) => s("chat:open"))
+}
+
+export function close(): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((s) => s("chat:close"))
+}
+
+export function prefillMessage(text: string): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((s) => s("chat:message", text))
+}
+
+export function sendMessage(text: string): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((s) => s("chat:send", text))
+}
+
+export function setGroup(group: string): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((s) => s("group", group))
+}
+
+export function setLanguage(language: string): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((s) => s("language", language))
+}
+
+export function getVisitorId(): string | undefined {
+  if (!isBrowser()) return undefined
+  return w().smartsupp?.vid
+}
+
+export function on(event: SmartsuppEventName, listener: (payload?: unknown) => void): () => void {
+  let set = eventListeners.get(event)
+  if (!set) {
+    set = new Set()
+    eventListeners.set(event, set)
+  }
+  set.add(listener)
+  return () => set?.delete(listener)
+}
+
 export function shutdown(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue
@@ -129,6 +239,7 @@ export async function destroy(): Promise<void> {
   Reflect.deleteProperty(g, "_smartsupp")
   queue.reset()
   store.reset()
+  eventListeners.clear()
   lifecycle.clearConfigHash()
   lifecycle.transition("idle")
 }

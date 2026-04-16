@@ -1,0 +1,91 @@
+{
+  "name": "ahize",
+  "version": "0.0.1",
+  "description": "Zero-dependency TypeScript wrappers for live chat & customer support widgets — Intercom, Crisp, Tawk.to, Zendesk, HubSpot and more. Unified API, tree-shakeable.",
+  "keywords": [
+    "ahize",
+    "live-chat",
+    "customer-support",
+    "chat-widget",
+    "intercom",
+    "crisp",
+    "tawk",
+    "zendesk",
+    "hubspot",
+    "livechat",
+    "drift",
+    "freshchat",
+    "helpscout",
+    "olark",
+    "userlike",
+    "smartsupp",
+    "tree-shakeable",
+    "typescript",
+    "zero-dependency",
+    "esm"
+  ],
+  "homepage": "https://github.com/productdevbook/ahize",
+  "bugs": {
+    "url": "https://github.com/productdevbook/ahize/issues"
+  },
+  "license": "MIT",
+  "author": "productdevbook",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/productdevbook/ahize.git"
+  },
+  "funding": "https://github.com/sponsors/productdevbook",
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    },
+    "./intercom": {
+      "types": "./dist/providers/intercom.d.mts",
+      "default": "./dist/providers/intercom.mjs"
+    },
+    "./crisp": {
+      "types": "./dist/providers/crisp.d.mts",
+      "default": "./dist/providers/crisp.mjs"
+    },
+    "./tawk": {
+      "types": "./dist/providers/tawk.d.mts",
+      "default": "./dist/providers/tawk.mjs"
+    },
+    "./zendesk": {
+      "types": "./dist/providers/zendesk.d.mts",
+      "default": "./dist/providers/zendesk.mjs"
+    },
+    "./hubspot": {
+      "types": "./dist/providers/hubspot.d.mts",
+      "default": "./dist/providers/hubspot.mjs"
+    }
+  },
+  "scripts": {
+    "build": "obuild",
+    "dev": "vitest",
+    "lint": "oxlint . && oxfmt --check .",
+    "lint:fix": "oxlint . --fix && oxfmt .",
+    "fmt": "oxfmt .",
+    "test": "pnpm lint && pnpm typecheck && vitest run",
+    "typecheck": "tsgo --noEmit",
+    "release": "pnpm test && pnpm build && bumpp --commit --tag --push --all",
+    "prepack": "pnpm build"
+  },
+  "devDependencies": {
+    "@typescript/native-preview": "7.0.0-dev.20260316.1",
+    "@vitest/coverage-v8": "^4.1.2",
+    "bumpp": "^11.0.1",
+    "obuild": "^0.4.32",
+    "oxfmt": "^0.42.0",
+    "oxlint": "^1.57.0",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2"
+  }
+}

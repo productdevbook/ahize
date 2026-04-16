@@ -10,7 +10,7 @@ import { resolve } from "node:path"
 const DIST = resolve(process.cwd(), "dist")
 
 const BUDGETS = [
-  { glob: /^providers\/chatwoot\.mjs$/, max: 9216, label: "provider:chatwoot" },
+  { glob: /^providers\/chatwoot\.mjs$/, max: 10240, label: "provider:chatwoot" },
   { glob: /^providers\/.+\.mjs$/, max: 6144, label: "provider" },
   { glob: /^index\.mjs$/, max: 4096, label: "core" },
   { glob: /^facade\.mjs$/, max: 3072, label: "facade" },

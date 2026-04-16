@@ -19,9 +19,13 @@ interface ChatwootAPI {
   setUser(identifier: string, user: Record<string, unknown>): void
   setCustomAttributes(attrs: Record<string, unknown>): void
   setConversationCustomAttributes?(attrs: Record<string, unknown>): void
+  deleteCustomAttribute?(key: string): void
+  deleteConversationCustomAttribute?(key: string): void
   setLabel(label: string): void
   removeLabel?(label: string): void
   setLocale?(locale: string): void
+  setColorScheme?(mode: "light" | "dark" | "auto"): void
+  popoutChatWindow?(): void
   toggle(state?: "open" | "close"): void
   toggleBubbleVisibility?(state: "show" | "hide"): void
   reset(): void
@@ -218,14 +222,43 @@ export function setTheme(args: {
   color?: string
 }): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
-  return queue.enqueue((_api) => {
+  return queue.enqueue((api) => {
+    const mode = args.mode ?? "auto"
+    if (api.setColorScheme) {
+      api.setColorScheme(mode)
+      return
+    }
+    // Fallback for Chatwoot SDKs that predate setColorScheme.
     const root = document.querySelectorAll(".woot-widget-holder")
     for (let i = 0; i < root.length; i++) {
       const el = root[i] as unknown as { style?: Record<string, string> }
-      if (args.color && el.style) el.style["color-scheme"] = args.mode ?? "auto"
+      if (el.style) el.style["color-scheme"] = mode
     }
-    // setWidgetColor may not exist on older Chatwoot versions; ignore.
   })
+}
+
+export function setColorScheme(mode: "light" | "dark" | "auto"): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((api) => api.setColorScheme?.(mode))
+}
+
+export function deleteAttribute(args: {
+  scope: "contact" | "conversation"
+  key: string
+}): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((api) => {
+    if (args.scope === "conversation") {
+      api.deleteConversationCustomAttribute?.(args.key)
+    } else {
+      api.deleteCustomAttribute?.(args.key)
+    }
+  })
+}
+
+export function popoutChatWindow(): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((api) => api.popoutChatWindow?.())
 }
 
 export async function safeShutdown(timeoutMs = 2000): Promise<void> {

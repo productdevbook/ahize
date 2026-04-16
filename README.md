@@ -1,6 +1,6 @@
 <p align="center">
   <br>
-  <img src=".github/assets/cover.png" alt="ahize" width="100%">
+  <img src="https://raw.githubusercontent.com/productdevbook/ahize/main/.github/assets/cover.png" alt="ahize" width="100%">
   <br><br>
   <b style="font-size: 2em;">ahize</b>
   <br><br>

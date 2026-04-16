@@ -64,6 +64,10 @@
       "types": "./dist/providers/zendesk.d.mts",
       "default": "./dist/providers/zendesk.mjs"
     },
+    "./zendesk-classic": {
+      "types": "./dist/providers/zendesk-classic.d.mts",
+      "default": "./dist/providers/zendesk-classic.mjs"
+    },
     "./hubspot": {
       "types": "./dist/providers/hubspot.d.mts",
       "default": "./dist/providers/hubspot.mjs"
@@ -131,6 +135,14 @@
     "./facade": {
       "types": "./dist/facade.d.mts",
       "default": "./dist/facade.mjs"
+    },
+    "./capabilities": {
+      "types": "./dist/capabilities.d.mts",
+      "default": "./dist/capabilities.mjs"
+    },
+    "./diagnostics": {
+      "types": "./dist/diagnostics.d.mts",
+      "default": "./dist/diagnostics.mjs"
     }
   },
   "scripts": {

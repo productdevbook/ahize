@@ -92,6 +92,13 @@ export function onUnreadCountChange(listener: (count: number) => void): () => vo
   return () => unreadListeners.delete(listener);
 }
 
+const loginErrorListeners = new Set<(err: unknown) => void>();
+
+export function onLoginError(listener: (err: unknown) => void): () => void {
+  loginErrorListeners.add(listener);
+  return () => loginErrorListeners.delete(listener);
+}
+
 export function identify(identity: Identity): Promise<void> {
   if (!isBrowser()) return Promise.resolve();
   if (!identity.verification) {
@@ -115,11 +122,16 @@ export function identify(identity: Identity): Promise<void> {
         if (verification.kind === "jwt") {
           deliver(verification.token);
         } else {
-          Promise.resolve(verification.getToken()).then(deliver);
+          Promise.resolve(verification.getToken())
+            .then(deliver)
+            .catch((err) => {
+              for (const l of loginErrorListeners) l(err);
+            });
         }
       },
       (err: unknown) => {
         console.warn("[ahize/zendesk] loginUser failed", err);
+        for (const l of loginErrorListeners) l(err);
       },
     );
   });
@@ -180,6 +192,7 @@ export async function destroy(): Promise<void> {
   queue.reset();
   store.reset();
   unreadListeners.clear();
+  loginErrorListeners.clear();
   readyPromise = undefined;
   readyResolve = undefined;
   lifecycle.clearConfigHash();

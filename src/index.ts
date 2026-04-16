@@ -36,5 +36,7 @@ export {
   type CspDirectives,
   type CspOptions,
 } from "./csp.ts";
+export { capabilities, supports, type ProviderCapabilities } from "./capabilities.ts";
+export { diagnose, diagnoseAll } from "./diagnostics.ts";
 
 export const version = "0.0.1";

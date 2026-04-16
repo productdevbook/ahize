@@ -47,6 +47,8 @@ export interface BaseLoadOptions {
   consent?: boolean;
   /** Inject script as `<script type="text/partytown">` to offload to worker. */
   partytown?: boolean;
+  /** zIndex for the launcher container; default 2147482647 (max - 1000). */
+  zIndex?: number;
 }
 
 export interface LoadOptions extends BaseLoadOptions {

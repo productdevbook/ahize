@@ -1,3 +1,4 @@
+import { waitForDefer } from "../_defer.ts";
 import { createIdentityStore } from "../_identity.ts";
 import { createLifecycle, hashConfig } from "../_lifecycle.ts";
 import { injectScript, isBrowser, removeScript } from "../_loader.ts";
@@ -43,12 +44,14 @@ export interface CrispLoadOptions extends LoadOptions {
 
 export async function load(options: CrispLoadOptions): Promise<void> {
   if (!isBrowser()) return;
+  if (options.consent === false) return;
   const h = hashConfig({ websiteId: options.websiteId, tokenId: options.tokenId });
   if (lifecycle.state() === "ready" && lifecycle.configHash() === h) return;
   if (lifecycle.configHash() && lifecycle.configHash() !== h) await destroy();
 
   lifecycle.transition("loading");
   lifecycle.setConfigHash(h);
+  await waitForDefer(options.defer ?? "immediate");
   bus();
   w().CRISP_WEBSITE_ID = options.websiteId;
   if (options.tokenId) w().CRISP_TOKEN_ID = options.tokenId;

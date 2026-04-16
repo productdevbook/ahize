@@ -1,3 +1,4 @@
+import { waitForDefer } from "../_defer.ts";
 import { createIdentityStore } from "../_identity.ts";
 import { createLifecycle, hashConfig } from "../_lifecycle.ts";
 import { injectScript, isBrowser, removeScript } from "../_loader.ts";
@@ -59,6 +60,7 @@ export interface ChatwootLoadOptions extends LoadOptions {
 
 export async function load(options: ChatwootLoadOptions): Promise<void> {
   if (!isBrowser()) return;
+  if (options.consent === false) return;
   const baseUrl = normalizeBaseUrl(options.baseUrl ?? "https://app.chatwoot.com");
   const h = hashConfig({ websiteToken: options.websiteToken, baseUrl });
   if (lifecycle.state() === "ready" && lifecycle.configHash() === h) return;
@@ -68,6 +70,7 @@ export async function load(options: ChatwootLoadOptions): Promise<void> {
   lifecycle.setConfigHash(h);
   currentToken = options.websiteToken;
   currentBaseUrl = baseUrl;
+  await waitForDefer(options.defer ?? "immediate");
   if (options.settings) w().chatwootSettings = options.settings;
 
   readyListener = () => {

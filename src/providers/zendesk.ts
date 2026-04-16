@@ -1,3 +1,4 @@
+import { waitForDefer } from "../_defer.ts";
 import { createIdentityStore } from "../_identity.ts";
 import { createLifecycle, hashConfig } from "../_lifecycle.ts";
 import { injectScript, isBrowser, removeScript } from "../_loader.ts";
@@ -31,12 +32,14 @@ export interface ZendeskLoadOptions extends LoadOptions {
 
 export async function load(options: ZendeskLoadOptions): Promise<void> {
   if (!isBrowser()) return;
+  if (options.consent === false) return;
   const h = hashConfig({ key: options.key });
   if (lifecycle.state() === "ready" && lifecycle.configHash() === h) return;
   if (lifecycle.configHash() && lifecycle.configHash() !== h) await destroy();
 
   lifecycle.transition("loading");
   lifecycle.setConfigHash(h);
+  await waitForDefer(options.defer ?? "immediate");
 
   try {
     await injectScript({

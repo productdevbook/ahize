@@ -1,6 +1,7 @@
 export { AhizeError, ProviderNotLoadedError, ScriptLoadError } from "./errors.ts";
 export type {
   BaseLoadOptions,
+  DeferStrategy,
   EventMetadata,
   Identity,
   IdentityListener,
@@ -23,5 +24,15 @@ export {
   type LifecycleListener,
   type LifecycleState,
 } from "./_lifecycle.ts";
+export { waitForDefer } from "./_defer.ts";
+export {
+  cspDirectives,
+  mergeCsp,
+  toHeaderString,
+  watchCspViolations,
+  type CspDirectiveKey,
+  type CspDirectives,
+  type CspOptions,
+} from "./csp.ts";
 
 export const version = "0.0.1";

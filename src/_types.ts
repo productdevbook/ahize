@@ -30,9 +30,21 @@ export type IdentityState = { kind: "anonymous" } | { kind: "identified"; identi
 
 export type IdentityListener = (next: IdentityState, prev: IdentityState) => void;
 
+export type DeferStrategy = "immediate" | "idle" | "interaction" | "manual";
+
 export interface BaseLoadOptions {
   nonce?: string;
   autoShow?: boolean;
+  /**
+   * When to actually inject the CDN script:
+   * - "immediate" (default): inject right away
+   * - "idle": requestIdleCallback + 200ms fallback
+   * - "interaction": first pointerdown/scroll/keydown/touchstart
+   * - "manual": the returned Promise never resolves; consumer must call resume()
+   */
+  defer?: DeferStrategy;
+  /** Consent gate. If false, load() resolves without injecting. Default: true. */
+  consent?: boolean;
 }
 
 export interface LoadOptions extends BaseLoadOptions {

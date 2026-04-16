@@ -1,3 +1,4 @@
+import { waitForDefer } from "../_defer.ts";
 import { createIdentityStore } from "../_identity.ts";
 import { createLifecycle, hashConfig } from "../_lifecycle.ts";
 import { injectScript, isBrowser, removeScript } from "../_loader.ts";
@@ -57,12 +58,14 @@ function lowercaseKeys<T extends Record<string, unknown>>(obj: T): Record<string
 
 export async function load(options: HubSpotLoadOptions): Promise<void> {
   if (!isBrowser()) return;
+  if (options.consent === false) return;
   const h = hashConfig({ portalId: options.portalId, region: options.region });
   if (lifecycle.state() === "ready" && lifecycle.configHash() === h) return;
   if (lifecycle.configHash() && lifecycle.configHash() !== h) await destroy();
 
   lifecycle.transition("loading");
   lifecycle.setConfigHash(h);
+  await waitForDefer(options.defer ?? "immediate");
 
   w().hsConversationsSettings = { loadImmediately: false };
 

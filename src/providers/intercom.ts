@@ -1,3 +1,4 @@
+import { waitForDefer } from "../_defer.ts";
 import { createIdentityStore } from "../_identity.ts";
 import { createLifecycle, hashConfig } from "../_lifecycle.ts";
 import { injectScript, isBrowser, removeScript } from "../_loader.ts";
@@ -50,6 +51,7 @@ export interface IntercomLoadOptions extends LoadOptions {
 
 export async function load(options: IntercomLoadOptions): Promise<void> {
   if (!isBrowser()) return;
+  if (options.consent === false) return;
   const configHash = hashConfig({ appId: options.appId });
   if (lifecycle.state() === "ready" && lifecycle.configHash() === configHash) return;
   if (lifecycle.state() === "loading") return;
@@ -60,6 +62,7 @@ export async function load(options: IntercomLoadOptions): Promise<void> {
   lifecycle.transition("loading");
   currentAppId = options.appId;
   lifecycle.setConfigHash(configHash);
+  await waitForDefer(options.defer ?? "immediate");
   w().intercomSettings = { app_id: options.appId };
   const stub = ensureStub();
   stub("boot", { app_id: options.appId });

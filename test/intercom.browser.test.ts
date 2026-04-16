@@ -23,6 +23,9 @@ describe("intercom (browser)", () => {
     const trackPromise = intercom.track("plan_upgraded", { tier: "pro" });
     const showPromise = intercom.show();
 
+    // Let load() reach the injectScript() call.
+    await new Promise((r) => setTimeout(r, 0));
+
     // Simulate Intercom's real CDN replacing the stub with a spy fn.
     const script = document.getElementById("ahize-intercom") as HTMLScriptElement;
     expect(script).toBeTruthy();
@@ -49,6 +52,8 @@ describe("intercom (browser)", () => {
     const loadPromise = intercom.load({ appId: "app_xyz" });
     const identifyPromise = intercom.identify({ id: "u1" });
 
+    await new Promise((r) => setTimeout(r, 0));
+
     // biome-ignore lint/suspicious/noExplicitAny: test shim
     (globalThis as any).Intercom = () => {};
     const script = document.getElementById("ahize-intercom") as HTMLScriptElement;
@@ -61,6 +66,24 @@ describe("intercom (browser)", () => {
       kind: "identified",
       identity: { id: "u1" },
     });
+  });
+
+  it("consent: false makes load() a no-op (no script injected)", async () => {
+    const intercom = await import("../src/providers/intercom.ts");
+    await intercom.load({ appId: "app_xyz", consent: false });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(document.getElementById("ahize-intercom")).toBeNull();
+    expect(intercom.state()).toBe("idle");
+  });
+
+  it("defer: manual never resolves load() by itself", async () => {
+    const intercom = await import("../src/providers/intercom.ts");
+    let resolved = false;
+    intercom.load({ appId: "app_xyz", defer: "manual" }).then(() => {
+      resolved = true;
+    });
+    await new Promise((r) => setTimeout(r, 80));
+    expect(resolved).toBe(false);
   });
 
   it("rejects non-HMAC verification", async () => {

@@ -121,32 +121,34 @@
     One API for every live-chat widget.
   </text>
 
-  <!-- Feature chips — larger text and padding -->
-  <g font-family="'Inter','Helvetica Neue',Arial,sans-serif" font-size="18" font-weight="700">
+  <!-- Feature chips — text precisely centered via dominant-baseline -->
+  <g font-family="'Inter','Helvetica Neue',Arial,sans-serif" font-size="18" font-weight="700"
+     text-anchor="middle" dominant-baseline="central">
     <g transform="translate(252, 402)">
       <rect x="0" y="0" width="176" height="48" rx="24" fill="url(#coral)"/>
-      <text x="88" y="31" text-anchor="middle" fill="#fff">0 dependencies</text>
+      <text x="88" y="25" fill="#fff">0 dependencies</text>
     </g>
     <g transform="translate(442, 402)">
       <rect x="0" y="0" width="160" height="48" rx="24" fill="url(#mint)"/>
-      <text x="80" y="31" text-anchor="middle" fill="#143a2b">13 providers</text>
+      <text x="80" y="25" fill="#143a2b">SSR-safe</text>
     </g>
     <g transform="translate(616, 402)">
       <rect x="0" y="0" width="148" height="48" rx="24" fill="url(#periwinkle)"/>
-      <text x="74" y="31" text-anchor="middle" fill="#fff">TypeScript</text>
+      <text x="74" y="25" fill="#fff">TypeScript</text>
     </g>
     <g transform="translate(778, 402)">
       <rect x="0" y="0" width="178" height="48" rx="24" fill="url(#butter)"/>
-      <text x="89" y="31" text-anchor="middle" fill="#5a3a00">tree-shakeable</text>
+      <text x="89" y="25" fill="#5a3a00">tree-shakeable</text>
     </g>
   </g>
 
-  <!-- npm install chip — bigger -->
+  <!-- npm install chip — single text block, centered -->
   <g transform="translate(458, 488)" filter="url(#softShadow)">
     <rect x="0" y="0" width="284" height="56" rx="28" fill="#1b3a2f"/>
-    <text x="28" y="37" fill="#ff8a65" font-family="'JetBrains Mono','SF Mono',monospace" font-size="20" font-weight="800">$</text>
-    <text x="52" y="37" fill="#fbf6ed" font-family="'JetBrains Mono','SF Mono',monospace" font-size="20" font-weight="600">npm i</text>
-    <text x="130" y="37" fill="#83e0bd" font-family="'JetBrains Mono','SF Mono',monospace" font-size="20" font-weight="800">ahize</text>
+    <text x="142" y="29" text-anchor="middle" dominant-baseline="central"
+          font-family="'JetBrains Mono','SF Mono',monospace" font-size="20" font-weight="700">
+      <tspan fill="#ff8a65" font-weight="800">$</tspan><tspan fill="#fbf6ed"> npm i </tspan><tspan fill="#83e0bd" font-weight="800">ahize</tspan>
+    </text>
   </g>
 
   <!-- GitHub attribution — still readable -->

@@ -14,6 +14,7 @@ const BUDGETS = [
   { glob: /^providers\/intercom\.mjs$/, max: 9216, label: "provider:intercom" },
   { glob: /^providers\/helpscout\.mjs$/, max: 7168, label: "provider:helpscout" },
   { glob: /^providers\/hubspot\.mjs$/, max: 7168, label: "provider:hubspot" },
+  { glob: /^providers\/tawk\.mjs$/, max: 9216, label: "provider:tawk" },
   { glob: /^providers\/.+\.mjs$/, max: 6144, label: "provider" },
   { glob: /^index\.mjs$/, max: 4096, label: "core" },
   { glob: /^facade\.mjs$/, max: 3072, label: "facade" },

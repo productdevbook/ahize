@@ -27,8 +27,46 @@ const lifecycle = createLifecycle()
 let readyPromise: Promise<void> | undefined
 let readyResolve: (() => void) | undefined
 
+export type BeaconMode = "selfService" | "neutral" | "askFirst"
+
+export interface BeaconDisplayConfig {
+  style?: "icon" | "text" | "iconAndText"
+  text?: string
+  position?: "left" | "right"
+  zIndex?: number
+  horizontalOffset?: number | string
+  verticalOffset?: number | string
+}
+
+export interface BeaconMessagingConfig {
+  chatEnabled?: boolean
+  contactForm?: {
+    customFieldsEnabled?: boolean
+    showName?: boolean
+    showSubject?: boolean
+    allowAttachments?: boolean
+  }
+}
+
+export interface BeaconConfig {
+  docsEnabled?: boolean
+  messagingEnabled?: boolean
+  enableFabAnimation?: boolean
+  enablePreviousMessages?: boolean
+  enableSounds?: boolean
+  color?: string
+  mode?: BeaconMode
+  hideAvatars?: boolean
+  hideFABOnMobile?: boolean
+  display?: BeaconDisplayConfig
+  messaging?: BeaconMessagingConfig
+  labels?: Record<string, string>
+}
+
 export interface HelpScoutLoadOptions extends LoadOptions {
   beaconId: string
+  /** Optional Beacon `init` config object (display, color, mode, labels, etc.). */
+  config?: BeaconConfig
 }
 
 export async function load(options: HelpScoutLoadOptions): Promise<void> {
@@ -61,7 +99,10 @@ export async function load(options: HelpScoutLoadOptions): Promise<void> {
   for (let i = 0; i < 80; i++) {
     const beacon = w().Beacon
     if (typeof beacon === "function") {
-      beacon("init", options.beaconId)
+      const initArg = options.config
+        ? { beaconId: options.beaconId, ...options.config }
+        : options.beaconId
+      beacon("init", initArg)
       beacon("on", "ready", () => {
         queue.ready(beacon)
         readyResolve?.()
@@ -122,9 +163,80 @@ export function suggest(articleIds: string[]): Promise<void> {
   return queue.enqueue((Beacon) => Beacon("suggest", ids))
 }
 
-export function navigate(path: string): Promise<void> {
+export type BeaconRoute =
+  | "/ask/"
+  | "/ask/message/"
+  | "/ask/chat/"
+  | "/answers/"
+  | "/ai-answers/"
+  | "/previous-messages/"
+  | (string & {})
+
+export function navigate(path: BeaconRoute): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((Beacon) => Beacon("navigate", path))
+}
+
+export function search(query: string): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((Beacon) => Beacon("search", query))
+}
+
+export function article(
+  articleId: string,
+  options?: { type?: "sidebar" | "modal" },
+): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((Beacon) =>
+    options ? Beacon("article", articleId, options) : Beacon("article", articleId),
+  )
+}
+
+export function sessionData(data: Record<string, string>): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((Beacon) => Beacon("session-data", data))
+}
+
+export function config(next: BeaconConfig): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((Beacon) => Beacon("config", next))
+}
+
+export function reset(): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((Beacon) => Beacon("reset"))
+}
+
+export function toggle(): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((Beacon) => Beacon("toggle"))
+}
+
+export function askQuestion(question: string): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((Beacon) => Beacon("ask-question", question))
+}
+
+export function showMessage(
+  id: string,
+  options?: { delay?: number; force?: boolean },
+): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((Beacon) =>
+    options ? Beacon("show-message", id, options) : Beacon("show-message", id),
+  )
+}
+
+export function info(): Promise<unknown> {
+  if (!isBrowser()) return Promise.resolve(undefined)
+  return new Promise((resolve) => {
+    queue
+      .enqueue((Beacon) => {
+        const result = (Beacon as unknown as (cmd: string) => unknown)("info")
+        resolve(result)
+      })
+      .catch(() => resolve(undefined))
+  })
 }
 
 export function prefill(payload: {
@@ -133,26 +245,43 @@ export function prefill(payload: {
   subject?: string
   text?: string
   fields?: Array<{ id: number; value: string }>
+  /** Up to 3 file attachments. */
+  attachments?: Array<{ url: string; filename: string }>
 }): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((Beacon) => Beacon("prefill", payload))
 }
 
-export function on(
-  event:
-    | "ready"
-    | "open"
-    | "close"
-    | "article-viewed"
-    | "email-sent"
-    | "chat-started"
-    | "chat-ended",
-  listener: (payload: unknown) => void,
-): () => void {
+export type BeaconEvent =
+  | "ready"
+  | "open"
+  | "close"
+  | "article-viewed"
+  | "email-sent"
+  | "chat-started"
+  | "chat-ended"
+  | "search"
+  | "message-clicked"
+  | "message-closed"
+  | "message-triggered"
+
+export function on(event: BeaconEvent, listener: (payload: unknown) => void): () => void {
   if (!isBrowser()) return () => {}
   let removed = false
   queue.enqueue((Beacon) => {
     if (!removed) Beacon("on", event, listener)
+  })
+  return () => {
+    removed = true
+    queue.enqueue((Beacon) => Beacon("off", event, listener))
+  }
+}
+
+export function once(event: BeaconEvent, listener: (payload: unknown) => void): () => void {
+  if (!isBrowser()) return () => {}
+  let removed = false
+  queue.enqueue((Beacon) => {
+    if (!removed) Beacon("once", event, listener)
   })
   return () => {
     removed = true
@@ -170,11 +299,15 @@ export function hide(): Promise<void> {
   return queue.enqueue((Beacon) => Beacon("close"))
 }
 
-export function shutdown(opts?: { endActiveChat?: boolean }): Promise<void> {
+export function shutdown(opts?: {
+  endActiveChat?: boolean
+  clearMessages?: boolean
+}): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
-  const endActiveChat = opts?.endActiveChat ?? true
+  const payload: Record<string, unknown> = { endActiveChat: opts?.endActiveChat ?? true }
+  if (opts?.clearMessages !== undefined) payload["clearMessages"] = opts.clearMessages
   return queue
-    .enqueue((Beacon) => Beacon("logout", { endActiveChat }))
+    .enqueue((Beacon) => Beacon("logout", payload))
     .then(() => {
       store.reset()
       lifecycle.transition("shutdown")

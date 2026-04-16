@@ -12,6 +12,7 @@ const DIST = resolve(process.cwd(), "dist")
 const BUDGETS = [
   { glob: /^providers\/chatwoot\.mjs$/, max: 10240, label: "provider:chatwoot" },
   { glob: /^providers\/intercom\.mjs$/, max: 9216, label: "provider:intercom" },
+  { glob: /^providers\/helpscout\.mjs$/, max: 7168, label: "provider:helpscout" },
   { glob: /^providers\/.+\.mjs$/, max: 6144, label: "provider" },
   { glob: /^index\.mjs$/, max: 4096, label: "core" },
   { glob: /^facade\.mjs$/, max: 3072, label: "facade" },

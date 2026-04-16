@@ -41,3 +41,12 @@ interface HTMLScriptElement {
   parentNode: { insertBefore(node: unknown, ref: unknown): void } | null
   remove(): void
 }
+
+interface Storage {
+  readonly length: number
+  key(index: number): string | null
+  getItem(key: string): string | null
+  setItem(key: string, value: string): void
+  removeItem(key: string): void
+  clear(): void
+}

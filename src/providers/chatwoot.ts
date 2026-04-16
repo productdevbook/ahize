@@ -291,10 +291,50 @@ export function shutdown(): Promise<void> {
     })
 }
 
+const CHATWOOT_DOM_SELECTORS = [
+  "#cw-widget-holder",
+  "#cw-bubble-holder",
+  ".woot-widget-holder",
+  ".woot-widget-bubble",
+  ".woot--bubble-holder",
+  "iframe.woot-widget-holder",
+] as const
+
+function removeChatwootDom(): void {
+  if (!isBrowser()) return
+  const doc = document as unknown as {
+    querySelectorAll(selector: string): ArrayLike<{ remove(): void }>
+  }
+  for (const selector of CHATWOOT_DOM_SELECTORS) {
+    const nodes = doc.querySelectorAll(selector)
+    for (let i = 0; i < nodes.length; i++) {
+      nodes[i]?.remove()
+    }
+  }
+}
+
+function clearChatwootStorage(): void {
+  if (!isBrowser()) return
+  try {
+    const storage = (globalThis as unknown as { localStorage?: Storage }).localStorage
+    if (!storage) return
+    const drop: string[] = []
+    for (let i = 0; i < storage.length; i++) {
+      const key = storage.key(i)
+      if (key && key.toLowerCase().includes("chatwoot")) drop.push(key)
+    }
+    for (const key of drop) storage.removeItem(key)
+  } catch {
+    // storage may be blocked by the browser; ignore
+  }
+}
+
 export async function destroy(): Promise<void> {
   if (!isBrowser()) return
   await shutdown().catch(() => undefined)
   removeScript("ahize-chatwoot")
+  removeChatwootDom()
+  clearChatwootStorage()
   if (readyListener && window) {
     window.removeEventListener?.("chatwoot:ready", readyListener)
     readyListener = undefined

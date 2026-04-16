@@ -20,16 +20,31 @@ interface TidioAPI {
     tags?: string[]
   }): void
   setContactProperties(props: Record<string, unknown>): void
+  track?(event: string): void
+  setColorPalette?(hex: string): void
+  display?(state: boolean): void
+  messageFromOperator?(message: string): void
+  messageFromVisitor?(message: string): void
+  addVisitorTags?(tags: string[]): void
+  setVisitorCurrency?(currency: { code: string; exchangeRate?: number }): void
   show(): void
   hide(): void
   open(): void
   close(): void
-  display?(state: boolean): void
-  messageFromOperator?(message: string): void
+}
+
+interface TidioIdentity {
+  distinct_id?: string
+  email?: string
+  name?: string
+  phone?: string
+  tags?: string[]
 }
 
 interface TidioWindow {
   tidioChatApi?: TidioAPI
+  tidioChatLang?: string
+  tidioIdentify?: TidioIdentity
 }
 
 function w(): TidioWindow {
@@ -47,9 +62,15 @@ const TIDIO_EVENTS = {
   messageFromVisitor: "tidioChat-messageFromVisitor",
   messageFromOperator: "tidioChat-messageFromOperator",
   visitorJoined: "tidioChat-visitorJoined",
+  setStatus: "tidioChat-setStatus",
+  conversationStart: "tidioChat-conversationStart",
+  preFormFilled: "tidioChat-preFormFilled",
+  resize: "tidioChat-resize",
+  open: "tidioChat-open",
+  close: "tidioChat-close",
 } as const
 
-type TidioEventName = keyof typeof TIDIO_EVENTS
+export type TidioEventName = keyof typeof TIDIO_EVENTS
 const eventListeners = new Map<TidioEventName, Set<(payload: unknown) => void>>()
 const domHandlers = new Map<TidioEventName, () => void>()
 
@@ -66,6 +87,10 @@ function bindDomEvent(event: TidioEventName): void {
 
 export interface TidioLoadOptions extends LoadOptions {
   publicKey: string
+  /** Pre-load language (writes window.tidioChatLang before script load). */
+  language?: string
+  /** Pre-load identity (writes window.tidioIdentify before script load). */
+  identify?: TidioIdentity
 }
 
 export async function load(options: TidioLoadOptions): Promise<void> {
@@ -82,12 +107,14 @@ export async function load(options: TidioLoadOptions): Promise<void> {
   })
   await waitForDefer(options.defer ?? "immediate")
 
-  bindDomEvent("ready")
-  bindDomEvent("messageFromVisitor")
-  bindDomEvent("messageFromOperator")
-  bindDomEvent("visitorJoined")
+  for (const evt of Object.keys(TIDIO_EVENTS) as TidioEventName[]) {
+    bindDomEvent(evt)
+  }
 
   document.addEventListener(TIDIO_EVENTS.ready, () => readyResolve?.(), { once: true } as never)
+
+  if (options.language !== undefined) w().tidioChatLang = options.language
+  if (options.identify !== undefined) w().tidioIdentify = options.identify
 
   try {
     await injectScript({
@@ -136,11 +163,54 @@ export function track<T extends EventMetadata = EventMetadata>(
   metadata?: T,
 ): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
-  return queue.enqueue((api) => api.setContactProperties({ [event]: metadata }))
+  return queue.enqueue((api) => {
+    if (api.track) {
+      // Prefer the documented automation-trigger API.
+      api.track(event)
+      // Tidio's track() doesn't accept metadata; surface it as contact properties
+      // so it isn't lost.
+      if (metadata) api.setContactProperties({ [`${event}_metadata`]: metadata })
+    } else {
+      api.setContactProperties({ [event]: metadata })
+    }
+  })
 }
 
 export function pageView(_info?: { path?: string; locale?: string }): Promise<void> {
   return Promise.resolve()
+}
+
+export function setColorPalette(hex: string): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((api) => api.setColorPalette?.(hex))
+}
+
+export function display(state: boolean): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((api) => api.display?.(state))
+}
+
+export function messageFromOperator(message: string): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((api) => api.messageFromOperator?.(message))
+}
+
+export function messageFromVisitor(message: string): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((api) => api.messageFromVisitor?.(message))
+}
+
+export function addVisitorTags(tags: string[]): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((api) => api.addVisitorTags?.(tags))
+}
+
+export function setVisitorCurrency(currency: {
+  code: string
+  exchangeRate?: number
+}): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((api) => api.setVisitorCurrency?.(currency))
 }
 
 export function on(event: TidioEventName, listener: (payload: unknown) => void): () => void {
@@ -155,15 +225,22 @@ export function on(event: TidioEventName, listener: (payload: unknown) => void):
 
 export function show(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
-  return queue.enqueue((api) => {
-    api.show()
-    api.open()
-  })
+  return queue.enqueue((api) => api.show())
 }
 
 export function hide(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((api) => api.hide())
+}
+
+export function open(): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((api) => api.open())
+}
+
+export function close(): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((api) => api.close())
 }
 
 export function shutdown(): Promise<void> {
@@ -182,6 +259,8 @@ export async function destroy(): Promise<void> {
   removeScript("ahize-tidio")
   const g = w()
   Reflect.deleteProperty(g, "tidioChatApi")
+  Reflect.deleteProperty(g, "tidioChatLang")
+  Reflect.deleteProperty(g, "tidioIdentify")
   queue.reset()
   store.reset()
   readyPromise = undefined

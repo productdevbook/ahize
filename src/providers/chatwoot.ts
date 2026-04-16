@@ -46,7 +46,15 @@ const queue = createQueue<ChatwootAPI>()
 const store = createIdentityStore()
 const lifecycle = createLifecycle()
 const unreadListeners = new Set<(count: number) => void>()
-type ChatwootEventName = "ready" | "message" | "unreadCountChange" | "error"
+type ChatwootEventName =
+  | "ready"
+  | "message"
+  | "unreadCountChange"
+  | "error"
+  | "opened"
+  | "closed"
+  | "startConversation"
+  | "postback"
 const eventListeners = new Map<ChatwootEventName, Set<(payload: unknown) => void>>()
 let currentToken: string | undefined
 let currentBaseUrl: string | undefined
@@ -121,6 +129,10 @@ export async function load(options: ChatwootLoadOptions): Promise<void> {
   bindDomEvent("chatwoot:on-message", "message")
   bindDomEvent("chatwoot:on-unread-message-count-changed", "unreadCountChange")
   bindDomEvent("chatwoot:error", "error")
+  bindDomEvent("chatwoot:opened", "opened")
+  bindDomEvent("chatwoot:closed", "closed")
+  bindDomEvent("chatwoot:on-start-conversation", "startConversation")
+  bindDomEvent("chatwoot:postback", "postback")
 
   try {
     await injectScript({

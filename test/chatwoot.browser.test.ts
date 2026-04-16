@@ -115,4 +115,37 @@ describe("chatwoot (browser) — vendor-doc audit fixes (#79)", () => {
     expect(rec.popoutChatWindow).toBe(1)
     await chatwoot.destroy()
   })
+
+  it("bridges chatwoot:opened / closed / on-start-conversation / postback", async () => {
+    const rec: Recorded = {
+      setColorScheme: [],
+      deleteCustomAttribute: [],
+      deleteConversationCustomAttribute: [],
+      popoutChatWindow: 0,
+    }
+    const chatwoot = await bootChatwoot(rec)
+
+    const opened: unknown[] = []
+    const closed: unknown[] = []
+    const started: unknown[] = []
+    const postbacks: unknown[] = []
+    chatwoot.on("opened", (p) => opened.push(p))
+    chatwoot.on("closed", (p) => closed.push(p))
+    chatwoot.on("startConversation", (p) => started.push(p))
+    chatwoot.on("postback", (p) => postbacks.push(p))
+
+    window.dispatchEvent(new CustomEvent("chatwoot:opened"))
+    window.dispatchEvent(new CustomEvent("chatwoot:closed"))
+    window.dispatchEvent(
+      new CustomEvent("chatwoot:on-start-conversation", { detail: { source: "bubble" } }),
+    )
+    window.dispatchEvent(new CustomEvent("chatwoot:postback", { detail: { value: "yes" } }))
+
+    expect(opened).toHaveLength(1)
+    expect(closed).toHaveLength(1)
+    expect(started).toEqual([{ source: "bubble" }])
+    expect(postbacks).toEqual([{ value: "yes" }])
+
+    await chatwoot.destroy()
+  })
 })

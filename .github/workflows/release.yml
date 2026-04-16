@@ -40,10 +40,20 @@ jobs:
       - name: 🚀 Build
         run: pnpm build
 
+      - name: 📐 Bundle size budget
+        run: pnpm bundle-budget
+
+      - name: 🔍 Are The Types Wrong (ATTW)
+        run: pnpm attw
+
       - name: 📦 Publish to npm
         run: pnpm publish --provenance --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: 🦕 Publish to JSR
+        run: pnpm dlx jsr publish --allow-slow-types
+        continue-on-error: true
 
       - name: 📝 Generate changelog
         run: pnpm dlx changelogithub

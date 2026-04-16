@@ -1,3 +1,9 @@
+/**
+ * @deprecated Drift is being sunset by Clari + Salesloft (announced 2026-03-06,
+ * ~60–90 day customer wind-down). Drift was taken offline in Sept 2025 after the
+ * Salesloft OAuth breach. New integrations should pick a different provider.
+ * See https://github.com/productdevbook/ahize/issues/81 for migration notes.
+ */
 import { waitForDefer } from "../_defer.ts"
 import { createIdentityStore } from "../_identity.ts"
 import { createLifecycle, hashConfig } from "../_lifecycle.ts"
@@ -36,6 +42,7 @@ const store = createIdentityStore()
 const lifecycle = createLifecycle()
 let readyPromise: Promise<void> | undefined
 let readyResolve: (() => void) | undefined
+let sunsetWarned = false
 
 export interface DriftLoadOptions extends LoadOptions {
   embedId: string
@@ -45,6 +52,14 @@ export interface DriftLoadOptions extends LoadOptions {
 export async function load(options: DriftLoadOptions): Promise<void> {
   if (!isBrowser()) return
   if (options.consent === false) return
+  if (!sunsetWarned) {
+    sunsetWarned = true
+    console.warn(
+      "[ahize/drift] Drift is being sunset by Clari + Salesloft (announced 2026-03-06). " +
+        "New integrations should pick a different provider. " +
+        "See https://github.com/productdevbook/ahize/issues/81",
+    )
+  }
   const h = hashConfig({ embedId: options.embedId })
   if (lifecycle.state() === "ready" && lifecycle.configHash() === h) return
   if (lifecycle.configHash() && lifecycle.configHash() !== h) await destroy()

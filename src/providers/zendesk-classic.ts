@@ -2,6 +2,13 @@
 // API surface (zE('webWidget', '...')). Kept separate from ahize/zendesk so
 // types don't pretend cross-compatibility.
 
+/**
+ * @deprecated Web Widget (Classic) is only available on Zendesk accounts created
+ * before 2023-06-05. The underlying Chat Web SDK / Chat Conversation APIs entered
+ * active removal on 2025-04-30. New integrations should use `ahize/zendesk`
+ * (Messenger).
+ * See https://github.com/productdevbook/ahize/issues/97 for migration notes.
+ */
 import { waitForDefer } from "../_defer.ts"
 import { createIdentityStore } from "../_identity.ts"
 import { createLifecycle, hashConfig } from "../_lifecycle.ts"
@@ -29,6 +36,7 @@ function w(): ZendeskWindow {
 const queue = createQueue<ZendeskFn>()
 const store = createIdentityStore()
 const lifecycle = createLifecycle()
+let sunsetWarned = false
 
 export interface ZendeskClassicLoadOptions extends LoadOptions {
   key: string
@@ -37,6 +45,15 @@ export interface ZendeskClassicLoadOptions extends LoadOptions {
 export async function load(options: ZendeskClassicLoadOptions): Promise<void> {
   if (!isBrowser()) return
   if (options.consent === false) return
+  if (!sunsetWarned) {
+    sunsetWarned = true
+    console.warn(
+      "[ahize/zendesk-classic] Web Widget (Classic) is only available on Zendesk " +
+        "accounts created before 2023-06-05; underlying Chat SDK is being removed. " +
+        "Use ahize/zendesk (Messenger) for new integrations. " +
+        "See https://github.com/productdevbook/ahize/issues/97",
+    )
+  }
   const h = hashConfig({ key: options.key })
   if (lifecycle.state() === "ready" && lifecycle.configHash() === h) return
   if (lifecycle.configHash() && lifecycle.configHash() !== h) await destroy()

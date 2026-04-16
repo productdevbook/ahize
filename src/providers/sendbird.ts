@@ -2,6 +2,14 @@
 // awkwardly: track() throws, identify() is part of boot options, show()/hide()
 // are CSS-level. Use Sendbird Desk if you want full support semantics.
 
+/**
+ * @deprecated The Sendbird AI Chatbot Widget product targeted by this wrapper
+ * was discontinued by Sendbird. The source repo `sendbird/chat-ai-widget` was
+ * archived 2025-07-09 at v1.9.7 and the AI Chatbot docs were removed from
+ * sendbird.com. The successor "AI Agent" has a different API surface; Sendbird
+ * Desk is recommended for support semantics.
+ * See https://github.com/productdevbook/ahize/issues/91 for migration notes.
+ */
 import { waitForDefer } from "../_defer.ts"
 import { createIdentityStore } from "../_identity.ts"
 import { createLifecycle, hashConfig } from "../_lifecycle.ts"
@@ -34,6 +42,7 @@ const store = createIdentityStore()
 const lifecycle = createLifecycle()
 let currentSettings: SendbirdWidgetSettings | undefined
 let trackForwarder: ((event: string, metadata?: EventMetadata) => void) | undefined
+let sunsetWarned = false
 
 export class SendbirdUnsupportedError extends AhizeError {
   override name = "SendbirdUnsupportedError"
@@ -51,6 +60,14 @@ export interface SendbirdLoadOptions extends LoadOptions {
 export async function load(options: SendbirdLoadOptions): Promise<void> {
   if (!isBrowser()) return
   if (options.consent === false) return
+  if (!sunsetWarned) {
+    sunsetWarned = true
+    console.warn(
+      "[ahize/sendbird] The Sendbird AI Chatbot Widget product is discontinued " +
+        "(repo archived 2025-07-09 at v1.9.7). Consider Sendbird Desk or another provider. " +
+        "See https://github.com/productdevbook/ahize/issues/91",
+    )
+  }
   const h = hashConfig({
     appId: options.applicationId,
     botId: options.botId,

@@ -1,3 +1,10 @@
+/**
+ * @deprecated The Userlike v1 CDN bundle (`userlike-cdn-widgets.s3-eu-west-1...`)
+ * loaded by this wrapper reaches EOL on 2026-08-01. Userlike has rebranded to
+ * Lime Connect; the v2 SDK (`@userlike/messenger`, `createMessenger({ version: 2 })`)
+ * has a different surface and is the recommended migration target.
+ * See https://github.com/productdevbook/ahize/issues/95 for migration notes.
+ */
 import { waitForDefer } from "../_defer.ts"
 import { createIdentityStore } from "../_identity.ts"
 import { createLifecycle, hashConfig } from "../_lifecycle.ts"
@@ -41,6 +48,7 @@ function w(): UserlikeWindow {
 const queue = createQueue<UserlikeMessenger>()
 const store = createIdentityStore()
 const lifecycle = createLifecycle()
+let sunsetWarned = false
 
 function unwrap<T>(r: UserlikeResult<T>): T {
   if (!r.ok) throw new ProviderNotLoadedError(`Userlike error: ${r.error}`)
@@ -54,6 +62,14 @@ export interface UserlikeLoadOptions extends LoadOptions {
 export async function load(options: UserlikeLoadOptions): Promise<void> {
   if (!isBrowser()) return
   if (options.consent === false) return
+  if (!sunsetWarned) {
+    sunsetWarned = true
+    console.warn(
+      "[ahize/userlike] Userlike v1 CDN reaches EOL on 2026-08-01. " +
+        "Vendor rebranded to Lime Connect; migrate to @userlike/messenger v2. " +
+        "See https://github.com/productdevbook/ahize/issues/95",
+    )
+  }
   const h = hashConfig({ messengerId: options.messengerId })
   if (lifecycle.state() === "ready" && lifecycle.configHash() === h) return
   if (lifecycle.configHash() && lifecycle.configHash() !== h) await destroy()

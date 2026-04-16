@@ -59,12 +59,6 @@ test/
   *.test.ts                 # vitest suites (158 tests, 12 files)
 e2e/
   *.spec.ts                 # Playwright skeletons (run on demand)
-docs/
-  ssr.md                    # SSR guide
-  csp.md                    # CSP directive catalog
-  gdpr.md                   # GDPR / consent guide
-  migration.md              # From react-use-intercom, react-zendesk, etc.
-  capabilities.md           # Per-provider feature matrix
 scripts/
   bundle-budget.mjs         # Per-file size budget enforcer
 ```

@@ -107,14 +107,6 @@ onIdentityChange(cb); // identity transitions
 - ⚡ **Performance** — facade mode, idle/interaction defer, Partytown
 - 🎯 **Identity state machine** — typed verification (HMAC/JWT/callback)
 
-## Docs
-
-- [SSR guide](./docs/ssr.md) — Next, Nuxt, Remix, SvelteKit, Astro, CF Workers
-- [CSP catalog](./docs/csp.md) — per-provider WSS endpoints + nonce
-- [GDPR / consent](./docs/gdpr.md) — OneTrust, Cookiebot, Iubenda, Tarteaucitron
-- [Migration](./docs/migration.md) — from `react-use-intercom`, `react-zendesk`, etc.
-- [Capability matrix](./docs/capabilities.md) — what each provider supports
-
 ## License
 
 [MIT](./LICENSE) © [productdevbook](https://github.com/productdevbook)

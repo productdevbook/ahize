@@ -11,7 +11,7 @@ import type {
   LoadOptions,
 } from "../_types.ts"
 
-type ZendeskFn = (api: string, command: string, ...args: unknown[]) => void
+type ZendeskFn = (api: string, command: string, ...args: unknown[]) => unknown
 
 interface ZendeskWindow {
   zE?: ZendeskFn
@@ -26,22 +26,59 @@ const queue = createQueue<ZendeskFn>()
 const store = createIdentityStore()
 const lifecycle = createLifecycle()
 const unreadListeners = new Set<(count: number) => void>()
+type ZendeskEventName =
+  | "open"
+  | "close"
+  | "unreadMessages"
+  | "conversationStarted"
+  | "conversationOpened"
+  | "proactiveMessageDisplayed"
+  | "proactiveMessageClicked"
+  | "newConversationButtonClicked"
+  | "conversationWithAgentRequested"
+  | "conversationAgentAssigned"
+  | "messagesShown"
+  | "postbackButtonClicked"
+  | "conversationExtensionOpened"
+  | "conversationExtensionDisplayed"
+const eventListeners = new Map<ZendeskEventName, Set<(payload?: unknown) => void>>()
+const ZENDESK_EVENTS: readonly ZendeskEventName[] = [
+  "open",
+  "close",
+  "conversationStarted",
+  "conversationOpened",
+  "proactiveMessageDisplayed",
+  "proactiveMessageClicked",
+  "newConversationButtonClicked",
+  "conversationWithAgentRequested",
+  "conversationAgentAssigned",
+  "messagesShown",
+  "postbackButtonClicked",
+  "conversationExtensionOpened",
+  "conversationExtensionDisplayed",
+]
 let readyPromise: Promise<void> | undefined
 let readyResolve: (() => void) | undefined
 
-const UUID_KEY = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-function validateKey(key: string): void {
-  if (!UUID_KEY.test(key)) {
-    console.warn(
-      "[ahize/zendesk] key does not look like a Messenger UUID. " +
-        "Use the snippet key (Messenger) — not the account/subdomain. " +
-        "If you're integrating Web Widget (Classic) instead, file an issue.",
-    )
-  }
+export type ZendeskCookieMode = "all" | "functional" | "none"
+
+export interface ZendeskCustomization {
+  color?: { primary?: string; launcher?: string; launcherText?: string; messageBubble?: string }
+  position?: { horizontal?: "left" | "right"; vertical?: "bottom" | "top" }
+  hideAvatars?: boolean
+  hideOfflineForm?: boolean
+  // Forward anything not yet typed.
+  [key: string]: unknown
 }
 
 export interface ZendeskLoadOptions extends LoadOptions {
   key: string
+  /** Cookie consent mode (defaults to vendor's `all`). */
+  cookies?: ZendeskCookieMode
+  /** Messenger z-index. */
+  zIndex?: number
+  /** Initial customization (colors, position, etc.). */
+  customization?: ZendeskCustomization
 }
 
 export async function load(options: ZendeskLoadOptions): Promise<void> {
@@ -53,7 +90,6 @@ export async function load(options: ZendeskLoadOptions): Promise<void> {
 
   lifecycle.transition("loading")
   lifecycle.setConfigHash(h)
-  validateKey(options.key)
   readyPromise = new Promise((r) => {
     readyResolve = r
   })
@@ -78,6 +114,18 @@ export async function load(options: ZendeskLoadOptions): Promise<void> {
     fn("messenger:on", "unreadMessages", (count: number) => {
       for (const l of unreadListeners) l(count)
     })
+    for (const evt of ZENDESK_EVENTS) {
+      fn("messenger:on", evt, (payload: unknown) => {
+        const set = eventListeners.get(evt)
+        if (!set) return
+        for (const l of set) l(payload)
+      })
+    }
+    if (options.cookies !== undefined) fn("messenger:set", "cookies", options.cookies)
+    if (options.zIndex !== undefined) fn("messenger:set", "zIndex", options.zIndex)
+    if (options.customization !== undefined) {
+      fn("messenger:set", "customization", options.customization)
+    }
   }
   lifecycle.transition("ready")
   readyResolve?.()
@@ -140,8 +188,10 @@ export function identify(identity: Identity): Promise<void> {
 export function pageView(info?: { path?: string; locale?: string }): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((zE) => {
-    if (info?.locale) zE("messenger", "locale", info.locale)
-    if (info?.path) zE("messenger:set", "conversationFields", [{ id: "path", value: info.path }])
+    if (info?.locale) zE("messenger:set", "locale", info.locale)
+    // NOTE: Zendesk's conversationFields requires numeric custom-field IDs.
+    // path is intentionally not auto-attached — callers should use track() with
+    // their own numeric field id, or set cookies/customization at load time.
   })
 }
 
@@ -151,23 +201,78 @@ export function track<T extends EventMetadata = EventMetadata>(
 ): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((zE) => {
-    zE("messenger", "conversationFields", [{ id: event, value: metadata }])
+    // The documented command is messenger:set, not messenger.
+    zE("messenger:set", "conversationFields", [{ id: event, value: metadata }])
   })
+}
+
+export function setConversationTags(tags: string[]): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((zE) => zE("messenger:set", "conversationTags", tags))
+}
+
+export function setLocale(locale: string): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((zE) => zE("messenger:set", "locale", locale))
+}
+
+export function setCookies(mode: ZendeskCookieMode): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((zE) => zE("messenger:set", "cookies", mode))
+}
+
+export function setZIndex(z: number): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((zE) => zE("messenger:set", "zIndex", z))
+}
+
+export function setCustomization(customization: ZendeskCustomization): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((zE) => zE("messenger:set", "customization", customization))
 }
 
 export function show(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
-  return queue.enqueue((zE) => {
-    zE("messenger", "show")
-    zE("messenger", "open")
-  })
+  return queue.enqueue((zE) => zE("messenger", "show"))
 }
 
 export function hide(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
-  return queue.enqueue((zE) => {
-    zE("messenger", "hide")
-  })
+  return queue.enqueue((zE) => zE("messenger", "hide"))
+}
+
+export function open(): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((zE) => zE("messenger", "open"))
+}
+
+export function close(): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((zE) => zE("messenger", "close"))
+}
+
+export function newConversation(options?: Record<string, unknown>): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((zE) =>
+    options
+      ? zE("messenger:ui", "newConversation", options)
+      : zE("messenger:ui", "newConversation"),
+  )
+}
+
+export function resetWidget(): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((zE) => zE("messenger", "resetWidget"))
+}
+
+export function on(event: ZendeskEventName, listener: (payload?: unknown) => void): () => void {
+  let set = eventListeners.get(event)
+  if (!set) {
+    set = new Set()
+    eventListeners.set(event, set)
+  }
+  set.add(listener)
+  return () => set?.delete(listener)
 }
 
 export function shutdown(): Promise<void> {
@@ -193,6 +298,7 @@ export async function destroy(): Promise<void> {
   store.reset()
   unreadListeners.clear()
   loginErrorListeners.clear()
+  eventListeners.clear()
   readyPromise = undefined
   readyResolve = undefined
   lifecycle.clearConfigHash()

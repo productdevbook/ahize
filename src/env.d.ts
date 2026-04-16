@@ -27,6 +27,8 @@ interface Document {
   getElementsByTagName(tag: string): ArrayLike<HTMLScriptElement>
   querySelectorAll(selector: string): ArrayLike<HTMLScriptElement>
   currentScript: HTMLScriptElement | null
+  addEventListener(type: string, listener: (event: Event) => void, opts?: unknown): void
+  removeEventListener(type: string, listener: (event: Event) => void, opts?: unknown): void
 }
 
 interface HTMLScriptElement {

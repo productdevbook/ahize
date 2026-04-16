@@ -3,10 +3,19 @@ declare var window:
   | {
       [key: string]: unknown;
       document: Document;
-      addEventListener?: (type: string, listener: () => void, opts?: unknown) => void;
-      removeEventListener?: (type: string, listener: () => void, opts?: unknown) => void;
+      addEventListener?: (type: string, listener: (event: unknown) => void, opts?: unknown) => void;
+      removeEventListener?: (
+        type: string,
+        listener: (event: unknown) => void,
+        opts?: unknown,
+      ) => void;
     }
   | undefined;
+
+interface Event {
+  type: string;
+  detail?: unknown;
+}
 
 declare var document: Document;
 declare var location: { pathname: string; search: string; href: string; hostname: string };

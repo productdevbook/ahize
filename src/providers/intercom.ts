@@ -43,16 +43,33 @@ function ensureStub(): StubIntercom {
 const queue = createQueue<IntercomFn>();
 const store = createIdentityStore();
 const lifecycle = createLifecycle();
+const unreadListeners = new Set<(count: number) => void>();
 let currentAppId: string | undefined;
+let currentOptions: IntercomLoadOptions | undefined;
+let readyPromise: Promise<void> | undefined;
+let readyResolve: (() => void) | undefined;
+let unreadBound = false;
+
+export type IntercomRegion = "us" | "eu" | "au";
 
 export interface IntercomLoadOptions extends LoadOptions {
   appId: string;
+  region?: IntercomRegion;
+  /** When false, load() returns immediately without injecting. Default: true. */
+  enabled?: boolean;
+}
+
+function apiBaseFor(region?: IntercomRegion): string | undefined {
+  if (region === "eu") return "https://api-iam.eu.intercom.io";
+  if (region === "au") return "https://api-iam.au.intercom.io";
+  return undefined;
 }
 
 export async function load(options: IntercomLoadOptions): Promise<void> {
   if (!isBrowser()) return;
   if (options.consent === false) return;
-  const configHash = hashConfig({ appId: options.appId });
+  if (options.enabled === false) return;
+  const configHash = hashConfig({ appId: options.appId, region: options.region });
   if (lifecycle.state() === "ready" && lifecycle.configHash() === configHash) return;
   if (lifecycle.state() === "loading") return;
   if (lifecycle.configHash() && lifecycle.configHash() !== configHash) {
@@ -61,11 +78,22 @@ export async function load(options: IntercomLoadOptions): Promise<void> {
 
   lifecycle.transition("loading");
   currentAppId = options.appId;
+  currentOptions = options;
+  readyPromise = new Promise((resolve) => {
+    readyResolve = resolve;
+  });
   lifecycle.setConfigHash(configHash);
   await waitForDefer(options.defer ?? "immediate");
-  w().intercomSettings = { app_id: options.appId };
+  const apiBase = apiBaseFor(options.region);
+  w().intercomSettings = {
+    app_id: options.appId,
+    ...(apiBase ? { api_base: apiBase } : {}),
+  };
   const stub = ensureStub();
-  stub("boot", { app_id: options.appId });
+  stub("boot", {
+    app_id: options.appId,
+    ...(apiBase ? { api_base: apiBase } : {}),
+  });
 
   try {
     await injectScript({
@@ -81,16 +109,48 @@ export async function load(options: IntercomLoadOptions): Promise<void> {
   }
 
   const fn = w().Intercom;
-  if (typeof fn === "function") queue.ready(fn);
+  if (typeof fn === "function") {
+    queue.ready(fn);
+    if (!unreadBound) {
+      fn("onUnreadCountChange", (count: number) => {
+        for (const l of unreadListeners) l(count);
+      });
+      unreadBound = true;
+    }
+  }
   lifecycle.transition("ready");
+  readyResolve?.();
+}
+
+export function ready(): Promise<void> {
+  return readyPromise ?? Promise.resolve();
+}
+
+export function onUnreadCountChange(listener: (count: number) => void): () => void {
+  unreadListeners.add(listener);
+  return () => unreadListeners.delete(listener);
+}
+
+export async function softReboot(): Promise<void> {
+  if (!isBrowser() || !currentOptions) return;
+  const opts = currentOptions;
+  await shutdown();
+  await load(opts);
 }
 
 export function identify(identity: Identity): Promise<void> {
   if (!isBrowser()) return Promise.resolve();
-  if (identity.verification && identity.verification.kind !== "hmac") {
-    return Promise.reject(new Error("Intercom requires HMAC verification (kind: 'hmac')"));
+  if (
+    identity.verification &&
+    identity.verification.kind !== "hmac" &&
+    identity.verification.kind !== "jwt"
+  ) {
+    return Promise.reject(
+      new Error("Intercom requires HMAC (user_hash) or JWT (intercom_user_jwt) verification"),
+    );
   }
   store.identify(identity);
+  const v = identity.verification;
   return queue.enqueue((Intercom) => {
     Intercom("update", {
       app_id: currentAppId,
@@ -99,7 +159,8 @@ export function identify(identity: Identity): Promise<void> {
       name: identity.name,
       phone: identity.phone,
       created_at: identity.createdAt,
-      user_hash: identity.verification?.kind === "hmac" ? identity.verification.hash : undefined,
+      user_hash: v?.kind === "hmac" ? v.hash : undefined,
+      intercom_user_jwt: v?.kind === "jwt" ? v.token : undefined,
       ...identity.attributes,
     });
   });
@@ -166,8 +227,13 @@ export async function destroy(): Promise<void> {
   Reflect.deleteProperty(g, "Intercom");
   Reflect.deleteProperty(g, "intercomSettings");
   currentAppId = undefined;
+  currentOptions = undefined;
   queue.reset();
   store.reset();
+  unreadListeners.clear();
+  unreadBound = false;
+  readyPromise = undefined;
+  readyResolve = undefined;
   lifecycle.clearConfigHash();
   lifecycle.transition("idle");
 }

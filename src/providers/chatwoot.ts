@@ -41,9 +41,38 @@ function w(): ChatwootWindow {
 const queue = createQueue<ChatwootAPI>();
 const store = createIdentityStore();
 const lifecycle = createLifecycle();
+const unreadListeners = new Set<(count: number) => void>();
+type ChatwootEventName = "ready" | "message" | "unreadCountChange" | "error";
+const eventListeners = new Map<ChatwootEventName, Set<(payload: unknown) => void>>();
 let currentToken: string | undefined;
 let currentBaseUrl: string | undefined;
 let readyListener: (() => void) | undefined;
+let readyPromise: Promise<void> | undefined;
+let readyResolve: (() => void) | undefined;
+const dispatchedDomEvents = new Map<ChatwootEventName, () => void>();
+
+function fire(name: ChatwootEventName, payload: unknown): void {
+  const set = eventListeners.get(name);
+  if (!set) return;
+  for (const l of set) l(payload);
+  if (name === "unreadCountChange") {
+    const count = (payload as { unreadMessageCount?: number } | undefined)?.unreadMessageCount ?? 0;
+    for (const l of unreadListeners) l(count);
+  }
+}
+
+function bindDomEvent(domName: string, mapped: ChatwootEventName): void {
+  if (!isBrowser()) return;
+  if (dispatchedDomEvents.has(mapped)) return;
+  const handler = (event: Event) => {
+    const detail = (event as Event & { detail?: unknown }).detail;
+    fire(mapped, detail);
+  };
+  window?.addEventListener?.(domName, handler as () => void);
+  dispatchedDomEvents.set(mapped, () =>
+    window?.removeEventListener?.(domName, handler as () => void),
+  );
+}
 
 function normalizeBaseUrl(url: string): string {
   let u = url.trim();
@@ -73,11 +102,21 @@ export async function load(options: ChatwootLoadOptions): Promise<void> {
   await waitForDefer(options.defer ?? "immediate");
   if (options.settings) w().chatwootSettings = options.settings;
 
+  readyPromise = new Promise((r) => {
+    readyResolve = r;
+  });
   readyListener = () => {
     const api = w().$chatwoot;
     if (api) queue.ready(api);
+    readyResolve?.();
+    fire("ready", undefined);
   };
   window?.addEventListener("chatwoot:ready", readyListener, { once: true });
+
+  // Wire up the rest of Chatwoot's CustomEvents to our typed emitter.
+  bindDomEvent("chatwoot:on-message", "message");
+  bindDomEvent("chatwoot:on-unread-message-count-changed", "unreadCountChange");
+  bindDomEvent("chatwoot:error", "error");
 
   try {
     await injectScript({
@@ -137,6 +176,67 @@ export function track<T extends EventMetadata = EventMetadata>(
   return queue.enqueue((api) => {
     api.setCustomAttributes({ [event]: metadata ?? true });
   });
+}
+
+export function ready(): Promise<void> {
+  return readyPromise ?? Promise.resolve();
+}
+
+export function on(event: ChatwootEventName, listener: (payload: unknown) => void): () => void {
+  let set = eventListeners.get(event);
+  if (!set) {
+    set = new Set();
+    eventListeners.set(event, set);
+  }
+  set.add(listener);
+  return () => set?.delete(listener);
+}
+
+export function onUnreadCountChange(listener: (count: number) => void): () => void {
+  unreadListeners.add(listener);
+  return () => unreadListeners.delete(listener);
+}
+
+export function setAttribute(args: {
+  scope: "contact" | "conversation";
+  key: string;
+  value: unknown;
+}): Promise<void> {
+  if (!isBrowser()) return Promise.resolve();
+  return queue.enqueue((api) => {
+    const payload = { [args.key]: args.value };
+    if (args.scope === "conversation" && api.setConversationCustomAttributes) {
+      api.setConversationCustomAttributes(payload);
+    } else {
+      api.setCustomAttributes(payload);
+    }
+  });
+}
+
+export function setTheme(args: {
+  mode?: "light" | "dark" | "auto";
+  color?: string;
+}): Promise<void> {
+  if (!isBrowser()) return Promise.resolve();
+  return queue.enqueue((_api) => {
+    const root = document.querySelectorAll(".woot-widget-holder");
+    for (let i = 0; i < root.length; i++) {
+      const el = root[i] as unknown as { style?: Record<string, string> };
+      if (args.color && el.style) el.style["color-scheme"] = args.mode ?? "auto";
+    }
+    // setWidgetColor may not exist on older Chatwoot versions; ignore.
+  });
+}
+
+export async function safeShutdown(timeoutMs = 2000): Promise<void> {
+  if (!isBrowser()) return;
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const api = w().$chatwoot;
+    if (!api || !api.isOpen) break;
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  await shutdown();
 }
 
 export function setLabel(label: string): Promise<void> {
@@ -199,6 +299,10 @@ export async function destroy(): Promise<void> {
     window.removeEventListener?.("chatwoot:ready", readyListener);
     readyListener = undefined;
   }
+  for (const off of dispatchedDomEvents.values()) off();
+  dispatchedDomEvents.clear();
+  eventListeners.clear();
+  unreadListeners.clear();
   const g = w();
   Reflect.deleteProperty(g, "chatwootSDK");
   Reflect.deleteProperty(g, "$chatwoot");
@@ -207,6 +311,8 @@ export async function destroy(): Promise<void> {
   store.reset();
   currentToken = undefined;
   currentBaseUrl = undefined;
+  readyPromise = undefined;
+  readyResolve = undefined;
   lifecycle.clearConfigHash();
   lifecycle.transition("idle");
 }

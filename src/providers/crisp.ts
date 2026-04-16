@@ -35,6 +35,18 @@ function bus(): CrispArray {
 
 const store = createIdentityStore();
 const lifecycle = createLifecycle();
+const unreadListeners = new Set<(count: number) => void>();
+let readyPromise: Promise<void> | undefined;
+let readyResolve: (() => void) | undefined;
+
+const ASCII_KEY = /^[a-z0-9_\-:]+$/i;
+function validateDataKey(key: string): void {
+  if (!ASCII_KEY.test(key)) {
+    console.warn(
+      `[ahize/crisp] setData key '${key}' contains non-ASCII / unsupported chars; Crisp will drop it.`,
+    );
+  }
+}
 
 export interface CrispLoadOptions extends LoadOptions {
   websiteId: string;
@@ -51,6 +63,9 @@ export async function load(options: CrispLoadOptions): Promise<void> {
 
   lifecycle.transition("loading");
   lifecycle.setConfigHash(h);
+  readyPromise = new Promise((r) => {
+    readyResolve = r;
+  });
   await waitForDefer(options.defer ?? "immediate");
   bus();
   w().CRISP_WEBSITE_ID = options.websiteId;
@@ -70,7 +85,80 @@ export async function load(options: CrispLoadOptions): Promise<void> {
     lifecycle.clearConfigHash();
     throw error;
   }
+  bus().push([
+    "on",
+    "session:loaded",
+    () => {
+      readyResolve?.();
+    },
+  ]);
+  bus().push([
+    "on",
+    "message:received",
+    () => {
+      // unread counter triggers via message:received/chat:opened - approximation
+    },
+  ]);
+  bus().push([
+    "on",
+    "chat:closed",
+    () => {
+      // leave hooks for facade wrappers
+    },
+  ]);
   lifecycle.transition("ready");
+}
+
+export function ready(): Promise<void> {
+  return readyPromise ?? Promise.resolve();
+}
+
+export function setData(data: Record<string, string | number | boolean>): Promise<void> {
+  if (!isBrowser()) return Promise.resolve();
+  const pairs: unknown[][] = [];
+  for (const [k, v] of Object.entries(data)) {
+    validateDataKey(k);
+    if (typeof v !== "string" && typeof v !== "number" && typeof v !== "boolean") {
+      console.warn(`[ahize/crisp] setData value for '${k}' must be string|number|boolean`);
+      continue;
+    }
+    pairs.push([k, v]);
+  }
+  if (pairs.length > 0) bus().push(["set", "session:data", [pairs]]);
+  return Promise.resolve();
+}
+
+export interface CrispCompany {
+  name?: string;
+  url?: string;
+  description?: string;
+  employment?: [title: string, role?: string];
+  geolocation?: { country?: string; city?: string };
+}
+export function setCompany(company: CrispCompany): Promise<void> {
+  if (!isBrowser()) return Promise.resolve();
+  bus().push(["set", "user:company", [company.name ?? "", company]]);
+  return Promise.resolve();
+}
+
+export function onUnreadCountChange(listener: (count: number) => void): () => void {
+  unreadListeners.add(listener);
+  if (isBrowser()) {
+    bus().push([
+      "on",
+      "session:unread",
+      (count: number) => {
+        for (const l of unreadListeners) l(count);
+      },
+    ]);
+  }
+  return () => unreadListeners.delete(listener);
+}
+
+export async function reconfigure(next: CrispLoadOptions): Promise<void> {
+  if (!isBrowser()) return;
+  await destroy();
+  await load(next);
 }
 
 export function identify(identity: Identity): Promise<void> {
@@ -143,6 +231,9 @@ export async function destroy(): Promise<void> {
   Reflect.deleteProperty(g, "CRISP_TOKEN_ID");
   Reflect.deleteProperty(g, "CRISP_RUNTIME_CONFIG");
   store.reset();
+  unreadListeners.clear();
+  readyPromise = undefined;
+  readyResolve = undefined;
   lifecycle.clearConfigHash();
   lifecycle.transition("idle");
 }

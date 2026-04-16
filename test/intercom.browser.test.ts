@@ -86,14 +86,14 @@ describe("intercom (browser)", () => {
     expect(resolved).toBe(false);
   });
 
-  it("rejects non-HMAC verification", async () => {
+  it("rejects callback verification (only HMAC/JWT supported)", async () => {
     const intercom = await import("../src/providers/intercom.ts");
     intercom.load({ appId: "app_xyz" });
     await expect(
       intercom.identify({
         id: "u1",
-        verification: { kind: "jwt", token: "nope" },
+        verification: { kind: "callback", getToken: async () => "x" },
       }),
-    ).rejects.toThrow(/HMAC/);
+    ).rejects.toThrow(/HMAC.*JWT/);
   });
 });

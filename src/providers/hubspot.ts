@@ -44,6 +44,9 @@ function hsq(): unknown[] {
 const conversations = createQueue<HubSpotConversations>();
 const store = createIdentityStore();
 const lifecycle = createLifecycle();
+const unreadListeners = new Set<(count: number) => void>();
+let readyPromise: Promise<void> | undefined;
+let readyResolve: (() => void) | undefined;
 
 export interface HubSpotLoadOptions extends LoadOptions {
   portalId: string;
@@ -52,8 +55,26 @@ export interface HubSpotLoadOptions extends LoadOptions {
 
 function lowercaseKeys<T extends Record<string, unknown>>(obj: T): Record<string, unknown> {
   const out: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(obj)) out[k.toLowerCase()] = v;
+  for (const [k, v] of Object.entries(obj)) {
+    if (k !== k.toLowerCase()) {
+      console.warn(
+        `[ahize/hubspot] field '${k}' is not lowercase; HubSpot drops it. Renamed to '${k.toLowerCase()}'.`,
+      );
+    }
+    out[k.toLowerCase()] = v;
+  }
   return out;
+}
+
+function validateTrackKeys(metadata: Record<string, unknown> | undefined): void {
+  if (!metadata) return;
+  for (const k of Object.keys(metadata)) {
+    if (k !== k.toLowerCase() || /[^a-z0-9_]/.test(k)) {
+      console.warn(
+        `[ahize/hubspot] track() metadata key '${k}' must be lowercase + snake_case; HubSpot will drop it silently.`,
+      );
+    }
+  }
 }
 
 export async function load(options: HubSpotLoadOptions): Promise<void> {
@@ -69,10 +90,20 @@ export async function load(options: HubSpotLoadOptions): Promise<void> {
 
   w().hsConversationsSettings = { loadImmediately: false };
 
+  readyPromise = new Promise((r) => {
+    readyResolve = r;
+  });
   if (!w().hsConversationsOnReady) w().hsConversationsOnReady = [];
   w().hsConversationsOnReady!.push(() => {
     const api = w().HubSpotConversations;
-    if (api) conversations.ready(api);
+    if (api) {
+      conversations.ready(api);
+      api.on("unreadConversationCountChanged", (payload: unknown) => {
+        const count = (payload as { unreadCount?: number } | undefined)?.unreadCount ?? 0;
+        for (const l of unreadListeners) l(count);
+      });
+      readyResolve?.();
+    }
   });
 
   const host = options.region === "eu1" ? "js-eu1.hs-scripts.com" : "js.hs-scripts.com";
@@ -134,6 +165,7 @@ export function track<T extends EventMetadata = EventMetadata>(
   metadata?: T,
 ): Promise<void> {
   if (!isBrowser()) return Promise.resolve();
+  validateTrackKeys(metadata);
   hsq().push(["trackEvent", { id: event, value: metadata }]);
   return Promise.resolve();
 }
@@ -173,6 +205,15 @@ export function shutdown(): Promise<void> {
     });
 }
 
+export function ready(): Promise<void> {
+  return readyPromise ?? Promise.resolve();
+}
+
+export function onUnreadCountChange(listener: (count: number) => void): () => void {
+  unreadListeners.add(listener);
+  return () => unreadListeners.delete(listener);
+}
+
 export async function destroy(): Promise<void> {
   if (!isBrowser()) return;
   await shutdown().catch(() => undefined);
@@ -184,6 +225,9 @@ export async function destroy(): Promise<void> {
   Reflect.deleteProperty(g, "_hsq");
   conversations.reset();
   store.reset();
+  unreadListeners.clear();
+  readyPromise = undefined;
+  readyResolve = undefined;
   lifecycle.clearConfigHash();
   lifecycle.transition("idle");
 }

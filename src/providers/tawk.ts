@@ -11,9 +11,14 @@ import type {
   LoadOptions,
 } from "../_types.ts";
 
+interface TawkVisitor {
+  name?: string;
+  email?: string;
+  hash?: string;
+}
+
 interface TawkAPI {
-  onLoad?: () => void;
-  visitor?: Record<string, unknown>;
+  visitor?: TawkVisitor;
   setAttributes?: (attrs: Record<string, unknown>, cb?: (err?: Error) => void) => void;
   addEvent?: (
     event: string,
@@ -22,8 +27,32 @@ interface TawkAPI {
   ) => void;
   showWidget?: () => void;
   hideWidget?: () => void;
+  maximize?: () => void;
+  minimize?: () => void;
+  toggle?: () => void;
+  popup?: () => void;
   endChat?: () => void;
-  switchWidget?: (data: { propertyId: string; widgetId: string }) => void;
+  login?: (user: TawkVisitor, cb?: (err?: Error) => void) => void;
+  logout?: (cb?: (err?: Error) => void) => void;
+  switchWidget?: (options: { propertyId: string; widgetId: string }) => void;
+  // Event hooks Tawk exposes; each must be assignable.
+  onLoad?: () => void;
+  onStatusChange?: (status: "online" | "away" | "offline") => void;
+  onChatMaximized?: () => void;
+  onChatMinimized?: () => void;
+  onChatHidden?: () => void;
+  onChatStarted?: () => void;
+  onChatEnded?: () => void;
+  onChatMessageVisitor?: (message: string) => void;
+  onChatMessageAgent?: (message: string) => void;
+  onChatMessageSystem?: (message: string) => void;
+  onAgentJoinChat?: (agent: { name: string; id: string }) => void;
+  onAgentLeaveChat?: (agent: { name: string; id: string }) => void;
+  onChatSatisfaction?: (satisfaction: -1 | 0 | 1) => void;
+  onVisitorNameChanged?: (name: string) => void;
+  onFileUpload?: (url: string) => void;
+  onTagsUpdated?: (data: unknown) => void;
+  onUnreadCountChanged?: (count: number) => void;
 }
 
 interface TawkWindow {
@@ -44,6 +73,23 @@ function api(): TawkAPI {
 const queue = createQueue<TawkAPI>();
 const store = createIdentityStore();
 const lifecycle = createLifecycle();
+const unreadListeners = new Set<(count: number) => void>();
+let readyPromise: Promise<void> | undefined;
+let readyResolve: (() => void) | undefined;
+
+const TAWK_COLLISION_SYMBOLS = ["L", "R", "T"];
+
+function warnCollisions(): void {
+  if (!isBrowser()) return;
+  const g = globalThis as unknown as Record<string, unknown>;
+  for (const s of TAWK_COLLISION_SYMBOLS) {
+    if (g[s] !== undefined) {
+      console.warn(
+        `[ahize/tawk] window.${s} is already defined (maybe Leaflet/Ramda?); Tawk's CDN clobbers single-letter globals. Save/restore manually.`,
+      );
+    }
+  }
+}
 
 export interface TawkLoadOptions extends LoadOptions {
   propertyId: string;
@@ -59,10 +105,20 @@ export async function load(options: TawkLoadOptions): Promise<void> {
 
   lifecycle.transition("loading");
   lifecycle.setConfigHash(h);
+  readyPromise = new Promise((r) => {
+    readyResolve = r;
+  });
+  warnCollisions();
   await waitForDefer(options.defer ?? "immediate");
   const a = api();
   w().Tawk_LoadStart = new Date();
-  a.onLoad = () => queue.ready(a);
+  a.onLoad = () => {
+    queue.ready(a);
+    readyResolve?.();
+  };
+  a.onUnreadCountChanged = (count: number) => {
+    for (const l of unreadListeners) l(count);
+  };
 
   const widget = options.widgetId ?? "default";
   try {
@@ -144,6 +200,22 @@ export function shutdown(): Promise<void> {
     });
 }
 
+export function ready(): Promise<void> {
+  return readyPromise ?? Promise.resolve();
+}
+
+export function onUnreadCountChange(listener: (count: number) => void): () => void {
+  unreadListeners.add(listener);
+  return () => unreadListeners.delete(listener);
+}
+
+export function switchWidget(options: { propertyId: string; widgetId: string }): Promise<void> {
+  if (!isBrowser()) return Promise.resolve();
+  return queue.enqueue((a) => {
+    a.switchWidget?.({ propertyId: options.propertyId, widgetId: options.widgetId });
+  });
+}
+
 export async function destroy(): Promise<void> {
   if (!isBrowser()) return;
   await shutdown().catch(() => undefined);
@@ -153,6 +225,9 @@ export async function destroy(): Promise<void> {
   Reflect.deleteProperty(g, "Tawk_LoadStart");
   queue.reset();
   store.reset();
+  unreadListeners.clear();
+  readyPromise = undefined;
+  readyResolve = undefined;
   lifecycle.clearConfigHash();
   lifecycle.transition("idle");
 }

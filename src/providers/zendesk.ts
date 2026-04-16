@@ -25,6 +25,20 @@ function w(): ZendeskWindow {
 const queue = createQueue<ZendeskFn>();
 const store = createIdentityStore();
 const lifecycle = createLifecycle();
+const unreadListeners = new Set<(count: number) => void>();
+let readyPromise: Promise<void> | undefined;
+let readyResolve: (() => void) | undefined;
+
+const UUID_KEY = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function validateKey(key: string): void {
+  if (!UUID_KEY.test(key)) {
+    console.warn(
+      "[ahize/zendesk] key does not look like a Messenger UUID. " +
+        "Use the snippet key (Messenger) — not the account/subdomain. " +
+        "If you're integrating Web Widget (Classic) instead, file an issue.",
+    );
+  }
+}
 
 export interface ZendeskLoadOptions extends LoadOptions {
   key: string;
@@ -39,6 +53,10 @@ export async function load(options: ZendeskLoadOptions): Promise<void> {
 
   lifecycle.transition("loading");
   lifecycle.setConfigHash(h);
+  validateKey(options.key);
+  readyPromise = new Promise((r) => {
+    readyResolve = r;
+  });
   await waitForDefer(options.defer ?? "immediate");
 
   try {
@@ -55,8 +73,23 @@ export async function load(options: ZendeskLoadOptions): Promise<void> {
   }
 
   const fn = w().zE;
-  if (typeof fn === "function") queue.ready(fn);
+  if (typeof fn === "function") {
+    queue.ready(fn);
+    fn("messenger:on", "unreadMessages", (count: number) => {
+      for (const l of unreadListeners) l(count);
+    });
+  }
   lifecycle.transition("ready");
+  readyResolve?.();
+}
+
+export function ready(): Promise<void> {
+  return readyPromise ?? Promise.resolve();
+}
+
+export function onUnreadCountChange(listener: (count: number) => void): () => void {
+  unreadListeners.add(listener);
+  return () => unreadListeners.delete(listener);
 }
 
 export function identify(identity: Identity): Promise<void> {
@@ -146,6 +179,9 @@ export async function destroy(): Promise<void> {
   Reflect.deleteProperty(g, "zESettings");
   queue.reset();
   store.reset();
+  unreadListeners.clear();
+  readyPromise = undefined;
+  readyResolve = undefined;
   lifecycle.clearConfigHash();
   lifecycle.transition("idle");
 }

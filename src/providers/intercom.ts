@@ -44,19 +44,59 @@ const queue = createQueue<IntercomFn>()
 const store = createIdentityStore()
 const lifecycle = createLifecycle()
 const unreadListeners = new Set<(count: number) => void>()
+const showListeners = new Set<() => void>()
+const hideListeners = new Set<() => void>()
+const emailSuppliedListeners = new Set<(email: string) => void>()
 let currentAppId: string | undefined
 let currentOptions: IntercomLoadOptions | undefined
 let readyPromise: Promise<void> | undefined
 let readyResolve: (() => void) | undefined
 let unreadBound = false
+let lifecycleEventsBound = false
 
 export type IntercomRegion = "us" | "eu" | "au"
+
+const TYPED_BOOT_KEYS = [
+  "hide_default_launcher",
+  "custom_launcher_selector",
+  "alignment",
+  "horizontal_padding",
+  "vertical_padding",
+  "action_color",
+  "background_color",
+  "session_duration",
+  "z_index",
+  "hide_notifications",
+  "theme_mode",
+] as const
 
 export interface IntercomLoadOptions extends LoadOptions {
   appId: string
   region?: IntercomRegion
   /** When false, load() returns immediately without injecting. Default: true. */
   enabled?: boolean
+  /** Hide the floating launcher button. */
+  hide_default_launcher?: boolean
+  /** CSS selector to bind the launcher to a custom element. */
+  custom_launcher_selector?: string
+  /** Launcher alignment. */
+  alignment?: "left" | "right"
+  /** Horizontal launcher offset (px, min 20). */
+  horizontal_padding?: number
+  /** Vertical launcher offset (px, min 20). */
+  vertical_padding?: number
+  /** Primary action color (CSS color). */
+  action_color?: string
+  /** Messenger background color (CSS color). */
+  background_color?: string
+  /** Visitor session length (ms). */
+  session_duration?: number
+  /** Messenger z-index. */
+  z_index?: number
+  /** Hide in-app notifications. */
+  hide_notifications?: boolean
+  /** Color scheme. */
+  theme_mode?: "light" | "dark" | "system"
 }
 
 function apiBaseFor(region?: IntercomRegion): string | undefined {
@@ -85,15 +125,19 @@ export async function load(options: IntercomLoadOptions): Promise<void> {
   lifecycle.setConfigHash(configHash)
   await waitForDefer(options.defer ?? "immediate")
   const apiBase = apiBaseFor(options.region)
-  w().intercomSettings = {
-    app_id: options.appId,
-    ...(apiBase ? { api_base: apiBase } : {}),
+  const typedBoot: Record<string, unknown> = {}
+  for (const key of TYPED_BOOT_KEYS) {
+    const v = options[key]
+    if (v !== undefined) typedBoot[key] = v
   }
-  const stub = ensureStub()
-  stub("boot", {
+  const bootPayload: Record<string, unknown> = {
     app_id: options.appId,
     ...(apiBase ? { api_base: apiBase } : {}),
-  })
+    ...typedBoot,
+  }
+  w().intercomSettings = bootPayload
+  const stub = ensureStub()
+  stub("boot", bootPayload)
 
   try {
     await injectScript({
@@ -117,6 +161,18 @@ export async function load(options: IntercomLoadOptions): Promise<void> {
       })
       unreadBound = true
     }
+    if (!lifecycleEventsBound) {
+      fn("onShow", () => {
+        for (const l of showListeners) l()
+      })
+      fn("onHide", () => {
+        for (const l of hideListeners) l()
+      })
+      fn("onUserEmailSupplied", (email: string) => {
+        for (const l of emailSuppliedListeners) l(email)
+      })
+      lifecycleEventsBound = true
+    }
   }
   lifecycle.transition("ready")
   readyResolve?.()
@@ -129,6 +185,21 @@ export function ready(): Promise<void> {
 export function onUnreadCountChange(listener: (count: number) => void): () => void {
   unreadListeners.add(listener)
   return () => unreadListeners.delete(listener)
+}
+
+export function onShow(listener: () => void): () => void {
+  showListeners.add(listener)
+  return () => showListeners.delete(listener)
+}
+
+export function onHide(listener: () => void): () => void {
+  hideListeners.add(listener)
+  return () => hideListeners.delete(listener)
+}
+
+export function onUserEmailSupplied(listener: (email: string) => void): () => void {
+  emailSuppliedListeners.add(listener)
+  return () => emailSuppliedListeners.delete(listener)
 }
 
 export async function softReboot(): Promise<void> {
@@ -201,6 +272,75 @@ export function hide(): Promise<void> {
   })
 }
 
+export type IntercomSpace = "home" | "messages" | "help" | "news" | "tasks" | "tickets"
+
+function call(command: string, ...args: unknown[]): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((Intercom) => Intercom(command, ...args))
+}
+
+export function showSpace(space: IntercomSpace): Promise<void> {
+  return call("showSpace", space)
+}
+
+export function showMessages(): Promise<void> {
+  return call("showMessages")
+}
+
+export function showNewMessage(prefilledContent?: string): Promise<void> {
+  return prefilledContent === undefined
+    ? call("showNewMessage")
+    : call("showNewMessage", prefilledContent)
+}
+
+export function showConversation(conversationId: string): Promise<void> {
+  return call("showConversation", conversationId)
+}
+
+export function showTicket(ticketId: string): Promise<void> {
+  return call("showTicket", ticketId)
+}
+
+export function showArticle(articleId: string): Promise<void> {
+  return call("showArticle", articleId)
+}
+
+export function showNews(newsItemId: string): Promise<void> {
+  return call("showNews", newsItemId)
+}
+
+export function startTour(tourId: string): Promise<void> {
+  return call("startTour", tourId)
+}
+
+export function startSurvey(surveyId: string): Promise<void> {
+  return call("startSurvey", surveyId)
+}
+
+export function startChecklist(checklistId: string): Promise<void> {
+  return call("startChecklist", checklistId)
+}
+
+export function startConversation(message: string): Promise<void> {
+  return call("startConversation", message)
+}
+
+export function hideNotifications(hidden: boolean): Promise<void> {
+  return call("hideNotifications", hidden)
+}
+
+export function getVisitorId(): Promise<string | undefined> {
+  if (!isBrowser()) return Promise.resolve(undefined)
+  return new Promise((resolve) => {
+    queue
+      .enqueue((Intercom) => {
+        const result = (Intercom as unknown as (cmd: string) => unknown)("getVisitorId")
+        resolve(typeof result === "string" ? result : undefined)
+      })
+      .catch(() => resolve(undefined))
+  })
+}
+
 export function shutdown(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   const prev = lifecycle.state()
@@ -231,7 +371,11 @@ export async function destroy(): Promise<void> {
   queue.reset()
   store.reset()
   unreadListeners.clear()
+  showListeners.clear()
+  hideListeners.clear()
+  emailSuppliedListeners.clear()
   unreadBound = false
+  lifecycleEventsBound = false
   readyPromise = undefined
   readyResolve = undefined
   lifecycle.clearConfigHash()

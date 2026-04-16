@@ -21,11 +21,14 @@ interface AhizeProvider {
   isReady(): boolean
 }
 
+/** Value held by the Svelte store from `createAhizeStore()`. */
 export interface AhizeStoreValue {
   isReady: boolean
   identity: IdentityState
 }
 
+/** Build a Svelte readable store that boots the provider and reflects
+ *  ready / identity state. */
 export function createAhizeStore<T extends LoadOptions>(
   provider: AhizeProvider,
   options: T,

@@ -117,6 +117,7 @@ const TYPED_SETTINGS_KEYS = [
   "baseDomain",
 ] as const satisfies ReadonlyArray<keyof ChatwootLoadOptions>
 
+/** Load-time options for this provider's `load()` call. */
 export interface ChatwootLoadOptions extends LoadOptions {
   websiteToken: string
   baseUrl?: string
@@ -146,6 +147,8 @@ export interface ChatwootLoadOptions extends LoadOptions {
   settings?: Record<string, unknown>
 }
 
+/** Inject the chatwoot CDN script and boot the widget. Queues any
+ *  methods called before the real API attaches; resolves when ready. */
 export async function load(options: ChatwootLoadOptions): Promise<void> {
   if (!isBrowser()) return
   if (options.consent === false) return
@@ -205,6 +208,8 @@ export async function load(options: ChatwootLoadOptions): Promise<void> {
   lifecycle.transition("ready")
 }
 
+/** Set the current visitor on chatwoot. Supports anonymous → identified
+ *  transitions and provider-specific verification (HMAC/JWT/callback). */
 export function identify(identity: Identity): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   if (!identity.id) return Promise.resolve()
@@ -226,6 +231,8 @@ export function identify(identity: Identity): Promise<void> {
   })
 }
 
+/** Notify chatwoot of an SPA route change so its targeting & session
+ *  tracking stay accurate. */
 export function pageView(info?: { path?: string; locale?: string }): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((api) => {
@@ -236,6 +243,8 @@ export function pageView(info?: { path?: string; locale?: string }): Promise<voi
   })
 }
 
+/** Emit a custom event to chatwoot. `metadata` is typed as
+ *  `EventMetadata` (a JSON-serialisable record). */
 export function track<T extends EventMetadata = EventMetadata>(
   event: string,
   metadata?: T,
@@ -246,10 +255,13 @@ export function track<T extends EventMetadata = EventMetadata>(
   })
 }
 
+/** Promise that resolves once chatwoot's API is live. */
 export function ready(): Promise<void> {
   return readyPromise ?? Promise.resolve()
 }
 
+/** Subscribe to the provider's typed lifecycle/event stream. Returns
+ *  an unsubscribe function. */
 export function on(event: ChatwootEventName, listener: (payload: unknown) => void): () => void {
   let set = eventListeners.get(event)
   if (!set) {
@@ -260,11 +272,14 @@ export function on(event: ChatwootEventName, listener: (payload: unknown) => voi
   return () => set?.delete(listener)
 }
 
+/** Subscribe to chatwoot's unread-count updates. Returns an unsubscribe
+ *  function. */
 export function onUnreadCountChange(listener: (count: number) => void): () => void {
   unreadListeners.add(listener)
   return () => unreadListeners.delete(listener)
 }
 
+/** Set a custom attribute on the contact or conversation. */
 export function setAttribute(args: {
   scope: "contact" | "conversation"
   key: string
@@ -281,6 +296,7 @@ export function setAttribute(args: {
   })
 }
 
+/** Apply a theme (mode + brand color) to the widget. */
 export function setTheme(args: {
   mode?: "light" | "dark" | "auto"
   color?: string
@@ -301,11 +317,13 @@ export function setTheme(args: {
   })
 }
 
+/** Switch between light / dark / auto color schemes at runtime. */
 export function setColorScheme(mode: "light" | "dark" | "auto"): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((api) => api.setColorScheme?.(mode))
 }
 
+/** Delete a custom attribute from the contact or conversation. */
 export function deleteAttribute(args: {
   scope: "contact" | "conversation"
   key: string
@@ -320,11 +338,13 @@ export function deleteAttribute(args: {
   })
 }
 
+/** Detach the chat into its own browser window. */
 export function popoutChatWindow(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((api) => api.popoutChatWindow?.())
 }
 
+/** Wait briefly for the widget to close, then `shutdown()`. */
 export async function safeShutdown(timeoutMs = 2000): Promise<void> {
   if (!isBrowser()) return
   const start = Date.now()
@@ -336,26 +356,31 @@ export async function safeShutdown(timeoutMs = 2000): Promise<void> {
   await shutdown()
 }
 
+/** Add a label to the contact. */
 export function setLabel(label: string): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((api) => api.setLabel(label))
 }
 
+/** Remove a label from the contact. */
 export function removeLabel(label: string): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((api) => api.removeLabel?.(label))
 }
 
+/** Switch the widget's locale at runtime. */
 export function setLocale(locale: string): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((api) => api.setLocale?.(locale))
 }
 
+/** Toggle the visibility of the message bubble specifically. */
 export function setBubbleVisibility(state: "show" | "hide"): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((api) => api.toggleBubbleVisibility?.(state))
 }
 
+/** Show / open the chatwoot widget. */
 export function show(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((api) => {
@@ -363,6 +388,7 @@ export function show(): Promise<void> {
   })
 }
 
+/** Hide / close the chatwoot widget. */
 export function hide(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((api) => {
@@ -370,6 +396,8 @@ export function hide(): Promise<void> {
   })
 }
 
+/** End the chatwoot session without removing the CDN script. The
+ *  provider can be re-identified with `identify()` afterwards. */
 export function shutdown(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue
@@ -426,6 +454,8 @@ function clearChatwootStorage(): void {
   }
 }
 
+/** Hard reset: remove the injected script, clear globals & listeners,
+ *  return to the idle lifecycle state. */
 export async function destroy(): Promise<void> {
   if (!isBrowser()) return
   await shutdown().catch(() => undefined)
@@ -454,22 +484,28 @@ export async function destroy(): Promise<void> {
   lifecycle.transition("idle")
 }
 
+/** Read the wrapper's currently-resolved configuration. */
 export function getConfig(): { websiteToken?: string; baseUrl?: string } {
   return { websiteToken: currentToken, baseUrl: currentBaseUrl }
 }
 
+/** Read the current visitor identity snapshot. */
 export function getIdentity(): IdentityState {
   return store.get()
 }
 
+/** Subscribe to identity transitions (anonymous ↔ identified). Returns an
+ *  unsubscribe function. */
 export function onIdentityChange(listener: IdentityListener): () => void {
   return store.onChange(listener)
 }
 
+/** Synchronous check — true once the widget is in the `ready` state. */
 export function isReady(): boolean {
   return lifecycle.state() === "ready"
 }
 
+/** Current lifecycle state: `idle` | `loading` | `ready` | `shutdown`. */
 export function state(): "idle" | "loading" | "ready" | "shutdown" {
   return lifecycle.state()
 }

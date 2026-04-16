@@ -80,6 +80,7 @@ const TIDIO_EVENTS = {
   close: "tidioChat-close",
 } as const
 
+/** Typed lifecycle/event names accepted by this provider's `on()`. */
 export type TidioEventName = keyof typeof TIDIO_EVENTS
 const eventListeners = new Map<TidioEventName, Set<(payload: unknown) => void>>()
 const domHandlers = new Map<TidioEventName, () => void>()
@@ -95,6 +96,7 @@ function bindDomEvent(event: TidioEventName): void {
   domHandlers.set(event, () => document.removeEventListener(TIDIO_EVENTS[event], handler))
 }
 
+/** Load-time options for this provider's `load()` call. */
 export interface TidioLoadOptions extends LoadOptions {
   publicKey: string
   /** Pre-load language (writes window.tidioChatLang before script load). */
@@ -103,6 +105,8 @@ export interface TidioLoadOptions extends LoadOptions {
   identify?: TidioIdentity
 }
 
+/** Inject the tidio CDN script and boot the widget. Queues any
+ *  methods called before the real API attaches; resolves when ready. */
 export async function load(options: TidioLoadOptions): Promise<void> {
   if (!isBrowser()) return
   if (options.consent === false) return
@@ -150,10 +154,13 @@ export async function load(options: TidioLoadOptions): Promise<void> {
   lifecycle.transition("ready")
 }
 
+/** Promise that resolves once tidio's API is live. */
 export function ready(): Promise<void> {
   return readyPromise ?? Promise.resolve()
 }
 
+/** Set the current visitor on tidio. Supports anonymous → identified
+ *  transitions and provider-specific verification (HMAC/JWT/callback). */
 export function identify(identity: Identity): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   store.identify(identity)
@@ -168,6 +175,8 @@ export function identify(identity: Identity): Promise<void> {
   })
 }
 
+/** Emit a custom event to tidio. `metadata` is typed as
+ *  `EventMetadata` (a JSON-serialisable record). */
 export function track<T extends EventMetadata = EventMetadata>(
   event: string,
   metadata?: T,
@@ -186,35 +195,43 @@ export function track<T extends EventMetadata = EventMetadata>(
   })
 }
 
+/** Notify tidio of an SPA route change so its targeting & session
+ *  tracking stay accurate. */
 export function pageView(_info?: { path?: string; locale?: string }): Promise<void> {
   return Promise.resolve()
 }
 
+/** Override the widget accent color at runtime. */
 export function setColorPalette(hex: string): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((api) => api.setColorPalette?.(hex))
 }
 
+/** Async visibility control (distinct from `show`/`hide`). */
 export function display(state: boolean): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((api) => api.display?.(state))
 }
 
+/** Send an operator-style message to the visitor. */
 export function messageFromOperator(message: string): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((api) => api.messageFromOperator?.(message))
 }
 
+/** Send a visitor-style message. */
 export function messageFromVisitor(message: string): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((api) => api.messageFromVisitor?.(message))
 }
 
+/** Append tags to the visitor record. */
 export function addVisitorTags(tags: string[]): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((api) => api.addVisitorTags?.(tags))
 }
 
+/** Set the visitor's currency (code + exchange rate). */
 export function setVisitorCurrency(currency: {
   code: string
   exchangeRate?: number
@@ -223,6 +240,8 @@ export function setVisitorCurrency(currency: {
   return queue.enqueue((api) => api.setVisitorCurrency?.(currency))
 }
 
+/** Subscribe to the provider's typed lifecycle/event stream. Returns
+ *  an unsubscribe function. */
 export function on(event: TidioEventName, listener: (payload: unknown) => void): () => void {
   let set = eventListeners.get(event)
   if (!set) {
@@ -233,26 +252,32 @@ export function on(event: TidioEventName, listener: (payload: unknown) => void):
   return () => set?.delete(listener)
 }
 
+/** Show / open the tidio widget. */
 export function show(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((api) => api.show())
 }
 
+/** Hide / close the tidio widget. */
 export function hide(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((api) => api.hide())
 }
 
+/** Open / expand the chat panel. */
 export function open(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((api) => api.open())
 }
 
+/** Close / collapse the chat panel. */
 export function close(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((api) => api.close())
 }
 
+/** End the tidio session without removing the CDN script. The
+ *  provider can be re-identified with `identify()` afterwards. */
 export function shutdown(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   store.reset()
@@ -260,6 +285,8 @@ export function shutdown(): Promise<void> {
   return Promise.resolve()
 }
 
+/** Hard reset: remove the injected script, clear globals & listeners,
+ *  return to the idle lifecycle state. */
 export async function destroy(): Promise<void> {
   if (!isBrowser()) return
   await shutdown().catch(() => undefined)
@@ -279,18 +306,23 @@ export async function destroy(): Promise<void> {
   lifecycle.transition("idle")
 }
 
+/** Read the current visitor identity snapshot. */
 export function getIdentity(): IdentityState {
   return store.get()
 }
 
+/** Subscribe to identity transitions (anonymous ↔ identified). Returns an
+ *  unsubscribe function. */
 export function onIdentityChange(listener: IdentityListener): () => void {
   return store.onChange(listener)
 }
 
+/** Synchronous check — true once the widget is in the `ready` state. */
 export function isReady(): boolean {
   return lifecycle.state() === "ready"
 }
 
+/** Current lifecycle state: `idle` | `loading` | `ready` | `shutdown`. */
 export function state(): "idle" | "loading" | "ready" | "shutdown" {
   return lifecycle.state()
 }

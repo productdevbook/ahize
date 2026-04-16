@@ -1,5 +1,6 @@
 import type { Identity, IdentityListener, IdentityState } from "./_types.ts"
 
+/** Store with anonymous → identified state transitions and listeners. */
 export interface IdentityStore {
   get(): IdentityState
   set(next: IdentityState): void
@@ -8,6 +9,7 @@ export interface IdentityStore {
   onChange(listener: IdentityListener): () => void
 }
 
+/** Build a fresh `IdentityStore`. Each provider keeps its own instance. */
 export function createIdentityStore(): IdentityStore {
   let state: IdentityState = { kind: "anonymous" }
   const listeners = new Set<IdentityListener>()

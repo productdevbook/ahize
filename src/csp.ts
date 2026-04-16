@@ -6,6 +6,7 @@
  */
 import type { ProviderName } from "./_types.ts"
 
+/** Every CSP directive key ahize knows how to emit. */
 export type CspDirectiveKey =
   | "script-src"
   | "connect-src"
@@ -15,6 +16,7 @@ export type CspDirectiveKey =
   | "font-src"
   | "media-src"
 
+/** A ready-to-serialise CSP directive set, one entry per key. */
 export type CspDirectives = Record<CspDirectiveKey, readonly string[]>
 
 const EMPTY: CspDirectives = {
@@ -125,6 +127,7 @@ const CATALOG: Partial<Record<ProviderName, CspDirectives>> = {
   },
 }
 
+/** Tuning knobs for `cspDirectives()`. */
 export interface CspOptions {
   /** Include 'self' in each directive. Default: true. */
   includeSelf?: boolean
@@ -132,6 +135,8 @@ export interface CspOptions {
   chatwootBaseUrl?: string
 }
 
+/** Build the CSP directive set a given provider needs. For self-hosted
+ *  Chatwoot pass `options.chatwootBaseUrl`. */
 export function cspDirectives(provider: ProviderName, options?: CspOptions): CspDirectives {
   const includeSelf = options?.includeSelf ?? true
   const base = CATALOG[provider] ?? EMPTY
@@ -164,6 +169,7 @@ function withSelf(directives: CspDirectives, includeSelf: boolean): CspDirective
   return out
 }
 
+/** Serialise a `CspDirectives` object to a Content-Security-Policy header string. */
 export function toHeaderString(directives: CspDirectives): string {
   const parts: string[] = []
   for (const key of Object.keys(directives) as CspDirectiveKey[]) {
@@ -173,6 +179,7 @@ export function toHeaderString(directives: CspDirectives): string {
   return parts.join("; ")
 }
 
+/** Union-merge any number of `CspDirectives` sets, de-duplicating values. */
 export function mergeCsp(...sets: CspDirectives[]): CspDirectives {
   const out = {} as CspDirectives
   const allKeys: CspDirectiveKey[] = [
@@ -192,6 +199,8 @@ export function mergeCsp(...sets: CspDirectives[]): CspDirectives {
   return out
 }
 
+/** Subscribe to browser `securitypolicyviolation` events — useful for
+ *  discovering which hosts your CSP is blocking during development. */
 export function watchCspViolations(
   handler: (event: SecurityPolicyViolationEvent) => void,
 ): () => void {

@@ -31,6 +31,7 @@ interface VueLike {
   onUnmounted(cb: () => void): void
 }
 
+/** Reactive state + bound methods returned by `useAhize()`. */
 export interface UseAhizeReturn {
   isReady: VueRef<boolean>
   identity: VueRef<IdentityState>
@@ -41,14 +42,17 @@ export interface UseAhizeReturn {
   pageView: (info?: { path?: string; locale?: string }) => Promise<void>
 }
 
+/** Options for the `useAhize()` composable. */
 export interface UseAhizeOptions<T extends LoadOptions> {
   provider: AhizeProvider
   options: T
   destroyOnUnmount?: boolean
 }
 
+/** Composable signature returned by `createUseAhize()`. */
 export type UseAhizeHook = <T extends LoadOptions>(opts: UseAhizeOptions<T>) => UseAhizeReturn
 
+/** Build a Vue 3 `useAhize` composable (consumer brings their own Vue). */
 export function createUseAhize(Vue: VueLike): UseAhizeHook {
   return function useAhize<T extends LoadOptions>(opts: UseAhizeOptions<T>): UseAhizeReturn {
     const isReady = Vue.ref(opts.provider.isReady())

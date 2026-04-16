@@ -54,6 +54,9 @@ interface FetchLike {
   ): Promise<{ ok: boolean; status: number }>
 }
 
+/** Dev-mode probe — ping the provider's CDN with the given config and
+ *  return a structured report (status + human hint for common failure
+ *  modes like 400/403/404). No-op on the server. */
 export async function diagnose(
   provider: ProviderName,
   config: Record<string, string>,
@@ -92,6 +95,7 @@ export async function diagnose(
   }
 }
 
+/** Run `diagnose()` for several providers at once. */
 export async function diagnoseAll(
   configs: Partial<Record<ProviderName, Record<string, string>>>,
 ): Promise<DiagnosticResult[]> {

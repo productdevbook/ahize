@@ -29,6 +29,8 @@ interface RouterLike {
   }
 }
 
+/** Standalone Angular service that wraps a provider — inject and call
+ *  `load()`, `identify()`, `show()`, etc. on it. */
 export class AhizeAngularService<T extends LoadOptions> {
   private readonly provider: AhizeProvider
   private readonly options: T

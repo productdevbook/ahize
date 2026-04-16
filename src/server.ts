@@ -23,14 +23,17 @@ import type {
 
 const anonymous: IdentityState = { kind: "anonymous" }
 
+/** SSR-safe no-op. See `ahize/server` module docs. */
 export async function load(_options?: LoadOptions): Promise<void> {
   // noop
 }
 
+/** SSR-safe no-op. See `ahize/server` module docs. */
 export async function identify(_identity: Identity): Promise<void> {
   // noop
 }
 
+/** SSR-safe no-op. See `ahize/server` module docs. */
 export async function track<T extends EventMetadata = EventMetadata>(
   _event: string,
   _metadata?: T,
@@ -38,38 +41,47 @@ export async function track<T extends EventMetadata = EventMetadata>(
   // noop
 }
 
+/** SSR-safe no-op. See `ahize/server` module docs. */
 export async function pageView(_info?: { path?: string; locale?: string }): Promise<void> {
   // noop
 }
 
+/** SSR-safe no-op. See `ahize/server` module docs. */
 export async function show(): Promise<void> {
   // noop
 }
 
+/** SSR-safe no-op. See `ahize/server` module docs. */
 export async function hide(): Promise<void> {
   // noop
 }
 
+/** SSR-safe no-op. See `ahize/server` module docs. */
 export async function shutdown(): Promise<void> {
   // noop
 }
 
+/** SSR-safe no-op. See `ahize/server` module docs. */
 export async function destroy(): Promise<void> {
   // noop
 }
 
+/** SSR-safe no-op. See `ahize/server` module docs. */
 export function getIdentity(): IdentityState {
   return anonymous
 }
 
+/** SSR-safe no-op. See `ahize/server` module docs. */
 export function onIdentityChange(_listener: IdentityListener): () => void {
   return () => {}
 }
 
+/** SSR-safe no-op. See `ahize/server` module docs. */
 export function isReady(): boolean {
   return false
 }
 
+/** SSR-safe no-op. See `ahize/server` module docs. */
 export function state(): "idle" {
   return "idle"
 }

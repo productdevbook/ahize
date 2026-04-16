@@ -48,4 +48,5 @@ export {
 export { capabilities, supports, type ProviderCapabilities } from "./capabilities.ts"
 export { diagnose, diagnoseAll } from "./diagnostics.ts"
 
+/** Library version string — bumped automatically on release. */
 export const version = "0.0.1"

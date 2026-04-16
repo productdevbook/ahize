@@ -40,6 +40,7 @@ const queue = createQueue<SmartsuppFn>()
 const store = createIdentityStore()
 const lifecycle = createLifecycle()
 
+/** Typed lifecycle/event names accepted by this provider's `on()`. */
 export type SmartsuppEventName = "messageSent" | "messageReceived" | "messengerClose"
 const SMARTSUPP_EVENT_MAP: Record<string, SmartsuppEventName> = {
   message_sent: "messageSent",
@@ -63,6 +64,7 @@ const TYPED_SETTINGS_KEYS = [
   "gaOptions",
 ] as const
 
+/** Load-time options for this provider's `load()` call. */
 export interface SmartsuppLoadOptions extends LoadOptions {
   key: string
   /** Initial widget visibility (config-time). Use show()/hide() at runtime. */
@@ -93,6 +95,8 @@ export interface SmartsuppLoadOptions extends LoadOptions {
   gaOptions?: Record<string, unknown>
 }
 
+/** Inject the smartsupp CDN script and boot the widget. Queues any
+ *  methods called before the real API attaches; resolves when ready. */
 export async function load(options: SmartsuppLoadOptions): Promise<void> {
   if (!isBrowser()) return
   if (options.consent === false) return
@@ -144,11 +148,14 @@ export async function load(options: SmartsuppLoadOptions): Promise<void> {
   lifecycle.transition("ready")
 }
 
+/** Promise that resolves once smartsupp's API is live. */
 export function ready(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue(() => {})
 }
 
+/** Set the current visitor on smartsupp. Supports anonymous → identified
+ *  transitions and provider-specific verification (HMAC/JWT/callback). */
 export function identify(identity: Identity): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   store.identify(identity)
@@ -160,6 +167,8 @@ export function identify(identity: Identity): Promise<void> {
   })
 }
 
+/** Emit a custom event to smartsupp. `metadata` is typed as
+ *  `EventMetadata` (a JSON-serialisable record). */
 export function track<T extends EventMetadata = EventMetadata>(
   event: string,
   metadata?: T,
@@ -168,10 +177,13 @@ export function track<T extends EventMetadata = EventMetadata>(
   return queue.enqueue((s) => s("variables", { [event]: metadata }))
 }
 
+/** Notify smartsupp of an SPA route change so its targeting & session
+ *  tracking stay accurate. */
 export function pageView(_info?: { path?: string; locale?: string }): Promise<void> {
   return Promise.resolve()
 }
 
+/** Show / open the smartsupp widget. */
 export function show(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   // Clear config-time hide flag too, otherwise the snippet immediately hides again.
@@ -180,46 +192,56 @@ export function show(): Promise<void> {
   return queue.enqueue((s) => s("chat:show"))
 }
 
+/** Hide / close the smartsupp widget. */
 export function hide(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((s) => s("chat:hide"))
 }
 
+/** Open / expand the chat panel. */
 export function open(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((s) => s("chat:open"))
 }
 
+/** Close / collapse the chat panel. */
 export function close(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((s) => s("chat:close"))
 }
 
+/** Pre-fill the composer with a draft message. */
 export function prefillMessage(text: string): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((s) => s("chat:message", text))
 }
 
+/** Send a message programmatically as the visitor. */
 export function sendMessage(text: string): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((s) => s("chat:send", text))
 }
 
+/** Route to a specific agent group. */
 export function setGroup(group: string): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((s) => s("group", group))
 }
 
+/** Switch the widget language at runtime. */
 export function setLanguage(language: string): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((s) => s("language", language))
 }
 
+/** Read the provider's anonymous visitor id. */
 export function getVisitorId(): string | undefined {
   if (!isBrowser()) return undefined
   return w().smartsupp?.vid
 }
 
+/** Subscribe to the provider's typed lifecycle/event stream. Returns
+ *  an unsubscribe function. */
 export function on(event: SmartsuppEventName, listener: (payload?: unknown) => void): () => void {
   let set = eventListeners.get(event)
   if (!set) {
@@ -230,6 +252,8 @@ export function on(event: SmartsuppEventName, listener: (payload?: unknown) => v
   return () => set?.delete(listener)
 }
 
+/** End the smartsupp session without removing the CDN script. The
+ *  provider can be re-identified with `identify()` afterwards. */
 export function shutdown(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue
@@ -240,6 +264,8 @@ export function shutdown(): Promise<void> {
     })
 }
 
+/** Hard reset: remove the injected script, clear globals & listeners,
+ *  return to the idle lifecycle state. */
 export async function destroy(): Promise<void> {
   if (!isBrowser()) return
   await shutdown().catch(() => undefined)
@@ -254,18 +280,23 @@ export async function destroy(): Promise<void> {
   lifecycle.transition("idle")
 }
 
+/** Read the current visitor identity snapshot. */
 export function getIdentity(): IdentityState {
   return store.get()
 }
 
+/** Subscribe to identity transitions (anonymous ↔ identified). Returns an
+ *  unsubscribe function. */
 export function onIdentityChange(listener: IdentityListener): () => void {
   return store.onChange(listener)
 }
 
+/** Synchronous check — true once the widget is in the `ready` state. */
 export function isReady(): boolean {
   return lifecycle.state() === "ready"
 }
 
+/** Current lifecycle state: `idle` | `loading` | `ready` | `shutdown`. */
 export function state(): "idle" | "loading" | "ready" | "shutdown" {
   return lifecycle.state()
 }

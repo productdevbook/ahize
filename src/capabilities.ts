@@ -11,6 +11,9 @@
 
 import type { ProviderName } from "./_types.ts"
 
+/** Feature flags describing what a given provider can do. Use with
+ *  `capabilities()` / `supports()` to branch without hard-coding provider
+ *  names. */
 export interface ProviderCapabilities {
   /** Identity verification supported (HMAC, JWT, callback). */
   hmac: boolean
@@ -81,10 +84,12 @@ const TABLE: Record<ProviderName, ProviderCapabilities> = {
   sendbird: NONE,
 }
 
+/** Return the full capability matrix for a provider. */
 export function capabilities(provider: ProviderName): ProviderCapabilities {
   return TABLE[provider]
 }
 
+/** Boolean check — `true` when the provider supports the named feature. */
 export function supports(provider: ProviderName, feature: keyof ProviderCapabilities): boolean {
   return TABLE[provider][feature]
 }

@@ -57,6 +57,7 @@ const queue = createQueue<GistAPI>()
 const store = createIdentityStore()
 const lifecycle = createLifecycle()
 
+/** Typed lifecycle/event names accepted by this provider's `on()`. */
 export type GistEventName =
   | "ready"
   | "chatReady"
@@ -77,6 +78,7 @@ let readyPromise: Promise<void> | undefined
 let readyResolve: (() => void) | undefined
 let documentReadyHandler: (() => void) | undefined
 
+/** Load-time options for this provider's `load()` call. */
 export interface GistLoadOptions extends LoadOptions {
   appId: string
   /** Hide the floating launcher (pair with customLauncherSelector). */
@@ -85,6 +87,8 @@ export interface GistLoadOptions extends LoadOptions {
   custom_launcher_selector?: string
 }
 
+/** Inject the gist CDN script and boot the widget. Queues any
+ *  methods called before the real API attaches; resolves when ready. */
 export async function load(options: GistLoadOptions): Promise<void> {
   if (!isBrowser()) return
   if (options.consent === false) return
@@ -140,11 +144,14 @@ export async function load(options: GistLoadOptions): Promise<void> {
   lifecycle.transition("ready")
 }
 
+/** Promise that resolves once gist's API is live. */
 export function ready(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return readyPromise ?? Promise.resolve()
 }
 
+/** Set the current visitor on gist. Supports anonymous → identified
+ *  transitions and provider-specific verification (HMAC/JWT/callback). */
 export function identify(identity: Identity): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   if (!identity.id) return Promise.resolve()
@@ -166,6 +173,8 @@ export function identify(identity: Identity): Promise<void> {
   })
 }
 
+/** Emit a custom event to gist. `metadata` is typed as
+ *  `EventMetadata` (a JSON-serialisable record). */
 export function track<T extends EventMetadata = EventMetadata>(
   event: string,
   metadata?: T,
@@ -177,52 +186,63 @@ export function track<T extends EventMetadata = EventMetadata>(
   })
 }
 
+/** Notify gist of an SPA route change so its targeting & session
+ *  tracking stay accurate. */
 export function pageView(_info?: { path?: string; locale?: string }): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((gist) => gist.trackPageView?.())
 }
 
+/** Show / open the gist widget. */
 export function show(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   // show + open conflated previously; split via show()/open() so callers pick.
   return queue.enqueue((gist) => gist.chat("show"))
 }
 
+/** Hide / close the gist widget. */
 export function hide(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((gist) => gist.chat("hide"))
 }
 
+/** Open / expand the chat panel. */
 export function open(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((gist) => gist.chat("open"))
 }
 
+/** Close / collapse the chat panel. */
 export function close(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((gist) => gist.chat("close"))
 }
 
+/** Show the floating launcher button. */
 export function showLauncher(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((gist) => gist.chat("showLauncher"))
 }
 
+/** Hide the floating launcher button. */
 export function hideLauncher(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((gist) => gist.chat("hideLauncher"))
 }
 
+/** Switch the messenger to sidebar layout. */
 export function setSidebar(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((gist) => gist.chat("sidebar"))
 }
 
+/** Switch the messenger to standard layout. */
 export function setStandard(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((gist) => gist.chat("standard"))
 }
 
+/** Navigate to a specific screen / route inside the widget. */
 export function navigate(
   screen: "home" | "conversations" | "newConversation" | "articles",
 ): Promise<void> {
@@ -232,6 +252,7 @@ export function navigate(
   )
 }
 
+/** Open a specific help-center article by id. */
 export function showArticle(articleId: string): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((gist) =>
@@ -239,11 +260,14 @@ export function showArticle(articleId: string): Promise<void> {
   )
 }
 
+/** Fire a vendor trigger (survey/form/post/bot/tour). */
 export function trigger(...args: unknown[]): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((gist) => gist.trigger?.(...args))
 }
 
+/** Subscribe to the provider's typed lifecycle/event stream. Returns
+ *  an unsubscribe function. */
 export function on(event: GistEventName, listener: (payload?: unknown) => void): () => void {
   let set = eventListeners.get(event)
   if (!set) {
@@ -254,11 +278,15 @@ export function on(event: GistEventName, listener: (payload?: unknown) => void):
   return () => set?.delete(listener)
 }
 
+/** Subscribe to gist's unread-count updates. Returns an unsubscribe
+ *  function. */
 export function onUnreadCountChange(listener: (count: number) => void): () => void {
   unreadListeners.add(listener)
   return () => unreadListeners.delete(listener)
 }
 
+/** End the gist session without removing the CDN script. The
+ *  provider can be re-identified with `identify()` afterwards. */
 export function shutdown(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue
@@ -269,6 +297,8 @@ export function shutdown(): Promise<void> {
     })
 }
 
+/** Hard reset: remove the injected script, clear globals & listeners,
+ *  return to the idle lifecycle state. */
 export async function destroy(): Promise<void> {
   if (!isBrowser()) return
   await shutdown().catch(() => undefined)
@@ -291,18 +321,23 @@ export async function destroy(): Promise<void> {
   lifecycle.transition("idle")
 }
 
+/** Read the current visitor identity snapshot. */
 export function getIdentity(): IdentityState {
   return store.get()
 }
 
+/** Subscribe to identity transitions (anonymous ↔ identified). Returns an
+ *  unsubscribe function. */
 export function onIdentityChange(listener: IdentityListener): () => void {
   return store.onChange(listener)
 }
 
+/** Synchronous check — true once the widget is in the `ready` state. */
 export function isReady(): boolean {
   return lifecycle.state() === "ready"
 }
 
+/** Current lifecycle state: `idle` | `loading` | `ready` | `shutdown`. */
 export function state(): "idle" | "loading" | "ready" | "shutdown" {
   return lifecycle.state()
 }

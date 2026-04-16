@@ -13,8 +13,10 @@
 
 import { isBrowser } from "./_loader.ts"
 
+/** Providers for which `mountFacade()` ships a pre-styled pill button. */
 export type FacadeProvider = "intercom" | "crisp" | "tawk" | "zendesk" | "hubspot" | "chatwoot"
 
+/** Options for `mountFacade()`. */
 export interface FacadeOptions {
   provider: FacadeProvider
   /** Boot the real provider. Called on first interaction (hover/click). */
@@ -42,6 +44,7 @@ const DEFAULT_COLOR: Record<FacadeProvider, string> = {
 
 const Z_INDEX_MAX_SAFE = 2_147_482_647
 
+/** Handle returned by `mountFacade()` for programmatic control. */
 export interface FacadeHandle {
   element(): HTMLElement | undefined
   destroy(): void
@@ -61,6 +64,9 @@ interface FacadeDoc {
   body: { appendChild(el: unknown): void }
 }
 
+/** Mount a lightweight launcher button that defers loading the real
+ *  widget CDN until the visitor hovers or clicks. Returns a handle with
+ *  `destroy()` and `boot()`. No-op when called on the server. */
 export function mountFacade(opts: FacadeOptions): FacadeHandle {
   if (!isBrowser()) {
     return {

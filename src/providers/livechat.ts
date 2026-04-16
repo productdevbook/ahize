@@ -56,6 +56,7 @@ const queue = createQueue<LiveChatWidget>()
 const store = createIdentityStore()
 const lifecycle = createLifecycle()
 
+/** Typed lifecycle/event names accepted by this provider's `on()`. */
 export type LiveChatEventName =
   | "ready"
   | "availabilityChanged"
@@ -95,6 +96,7 @@ const TYPED_LC_KEYS = [
   "asyncInit",
 ] as const
 
+/** Load-time options for this provider's `load()` call. */
 export interface LiveChatLoadOptions extends LoadOptions {
   license: number
   /** Route to a specific agent group. */
@@ -113,6 +115,8 @@ export interface LiveChatLoadOptions extends LoadOptions {
   asyncInit?: boolean
 }
 
+/** Inject the livechat CDN script and boot the widget. Queues any
+ *  methods called before the real API attaches; resolves when ready. */
 export async function load(options: LiveChatLoadOptions): Promise<void> {
   if (!isBrowser()) return
   if (options.consent === false) return
@@ -173,10 +177,13 @@ export async function load(options: LiveChatLoadOptions): Promise<void> {
   lifecycle.transition("ready")
 }
 
+/** Promise that resolves once livechat's API is live. */
 export function ready(): Promise<void> {
   return readyPromise ?? Promise.resolve()
 }
 
+/** Set the current visitor on livechat. Supports anonymous → identified
+ *  transitions and provider-specific verification (HMAC/JWT/callback). */
 export function identify(identity: Identity): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   store.identify(identity)
@@ -189,6 +196,8 @@ export function identify(identity: Identity): Promise<void> {
   })
 }
 
+/** Emit a custom event to livechat. `metadata` is typed as
+ *  `EventMetadata` (a JSON-serialisable record). */
 export function track<T extends EventMetadata = EventMetadata>(
   event: string,
   metadata?: T,
@@ -199,20 +208,25 @@ export function track<T extends EventMetadata = EventMetadata>(
   })
 }
 
+/** Notify livechat of an SPA route change so its targeting & session
+ *  tracking stay accurate. */
 export function pageView(_info?: { path?: string; locale?: string }): Promise<void> {
   return Promise.resolve()
 }
 
+/** Show / open the livechat widget. */
 export function show(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((widget) => widget.call("maximize"))
 }
 
+/** Hide / close the livechat widget. */
 export function hide(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((widget) => widget.call("hide"))
 }
 
+/** Maximize the widget to its full chat panel state. */
 export function maximize(messageDraft?: string): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((widget) =>
@@ -220,16 +234,19 @@ export function maximize(messageDraft?: string): Promise<void> {
   )
 }
 
+/** Minimize the widget to a collapsed launcher. */
 export function minimize(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((widget) => widget.call("minimize"))
 }
 
+/** Hide the greeting message. */
 export function hideGreeting(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((widget) => widget.call("hide_greeting"))
 }
 
+/** Fire a purchase tracker (trackerId/orderPrice/orderId). */
 export function triggerSalesTracker(args: {
   trackerId: number
   orderPrice: number
@@ -239,28 +256,35 @@ export function triggerSalesTracker(args: {
   return queue.enqueue((widget) => widget.call("trigger_sales_tracker", args))
 }
 
+/** Set session variables (replace semantics — distinct from update). */
 export function setSessionVariables(vars: Record<string, string>): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((widget) => widget.call("set_session_variables", vars))
 }
 
+/** Generic synchronous read from the underlying widget. */
 export function get<T = unknown>(method: string): T | undefined {
   if (!isBrowser()) return undefined
   return w().LiveChatWidget?.get<T>(method)
 }
 
+/** Read the widget's availability + visibility state. */
 export function getState(): unknown {
   return get("state")
 }
 
+/** Read the resolved customer data. */
 export function getCustomerData(): unknown {
   return get("customer_data")
 }
 
+/** Read the current chat/thread metadata. */
 export function getChatData(): unknown {
   return get("chat_data")
 }
 
+/** Subscribe to the provider's typed lifecycle/event stream. Returns
+ *  an unsubscribe function. */
 export function on(event: LiveChatEventName, listener: (payload?: unknown) => void): () => void {
   let set = eventListeners.get(event)
   if (!set) {
@@ -271,6 +295,8 @@ export function on(event: LiveChatEventName, listener: (payload?: unknown) => vo
   return () => set?.delete(listener)
 }
 
+/** End the livechat session without removing the CDN script. The
+ *  provider can be re-identified with `identify()` afterwards. */
 export function shutdown(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue
@@ -281,6 +307,8 @@ export function shutdown(): Promise<void> {
     })
 }
 
+/** Hard reset: remove the injected script, clear globals & listeners,
+ *  return to the idle lifecycle state. */
 export async function destroy(): Promise<void> {
   if (!isBrowser()) return
   await shutdown().catch(() => undefined)
@@ -297,18 +325,23 @@ export async function destroy(): Promise<void> {
   lifecycle.transition("idle")
 }
 
+/** Read the current visitor identity snapshot. */
 export function getIdentity(): IdentityState {
   return store.get()
 }
 
+/** Subscribe to identity transitions (anonymous ↔ identified). Returns an
+ *  unsubscribe function. */
 export function onIdentityChange(listener: IdentityListener): () => void {
   return store.onChange(listener)
 }
 
+/** Synchronous check — true once the widget is in the `ready` state. */
 export function isReady(): boolean {
   return lifecycle.state() === "ready"
 }
 
+/** Current lifecycle state: `idle` | `loading` | `ready` | `shutdown`. */
 export function state(): "idle" | "loading" | "ready" | "shutdown" {
   return lifecycle.state()
 }

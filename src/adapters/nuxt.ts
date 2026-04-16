@@ -32,6 +32,7 @@ interface NuxtPluginContext {
   hook?: (name: string, cb: (...args: unknown[]) => void) => void
 }
 
+/** Plugin options for `createNuxtAhizePlugin()`. */
 export interface NuxtAhizeOptions<T extends LoadOptions> {
   provider: AhizeProvider
   options: T
@@ -41,8 +42,11 @@ export interface NuxtAhizeOptions<T extends LoadOptions> {
   provide?: boolean
 }
 
+/** Plugin signature returned by `createNuxtAhizePlugin()`. */
 export type NuxtAhizePlugin = (nuxtApp: NuxtPluginContext) => Promise<void>
 
+/** Build a Nuxt 3 / Nuxt 4 plugin that boots the provider client-side
+ *  and exposes it via `useNuxtApp().$ahize`. */
 export function createNuxtAhizePlugin<T extends LoadOptions>(
   opts: NuxtAhizeOptions<T>,
 ): NuxtAhizePlugin {

@@ -45,6 +45,7 @@ interface NextAppRouterHooks {
   useSearchParams?: () => { toString(): string }
 }
 
+/** Props for the `Ahize` component returned by `createAhizeComponent()`. */
 export interface NextAhizeOptions<T extends LoadOptions> {
   provider: AhizeProvider
   options: T
@@ -54,8 +55,12 @@ export interface NextAhizeOptions<T extends LoadOptions> {
   autoPageView?: boolean
 }
 
+/** React component shape returned by `createAhizeComponent()`. */
 export type NextAhizeComponent = <T extends LoadOptions>(props: NextAhizeOptions<T>) => null
 
+/** Build a Next.js App Router component that boots the provider on
+ *  mount and (when `autoPageView` is set) auto-fires `pageView()` on
+ *  every route change via `usePathname` / `useSearchParams`. */
 export function createAhizeComponent(
   React: ReactLike,
   nextNav?: NextAppRouterHooks,

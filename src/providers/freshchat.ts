@@ -77,6 +77,7 @@ const queue = createQueue<FreshchatWidget>()
 const store = createIdentityStore()
 const lifecycle = createLifecycle()
 
+/** Region keys this provider's vendor supports. */
 export type FreshchatRegion = "us" | "eu" | "in" | "au"
 const REGION_HOSTS: Record<FreshchatRegion, string> = {
   us: "https://wchat.freshchat.com",
@@ -85,6 +86,7 @@ const REGION_HOSTS: Record<FreshchatRegion, string> = {
   au: "https://wchat.au.freshchat.com",
 }
 
+/** Typed lifecycle/event names accepted by this provider's `on()`. */
 export type FreshchatEventName =
   | "widgetLoaded"
   | "widgetOpened"
@@ -129,6 +131,7 @@ let readyResolve: (() => void) | undefined
 let currentToken: string | undefined
 let currentHost: string | undefined
 
+/** Load-time options for this provider's `load()` call. */
 export interface FreshchatLoadOptions extends LoadOptions {
   token: string
   /** Convenience for picking the regional host. */
@@ -153,6 +156,8 @@ export interface FreshchatLoadOptions extends LoadOptions {
   eagerLoad?: boolean
 }
 
+/** Inject the freshchat CDN script and boot the widget. Queues any
+ *  methods called before the real API attaches; resolves when ready. */
 export async function load(options: FreshchatLoadOptions): Promise<void> {
   if (!isBrowser()) return
   if (options.consent === false) return
@@ -229,10 +234,13 @@ export async function load(options: FreshchatLoadOptions): Promise<void> {
   lifecycle.transition("ready")
 }
 
+/** Promise that resolves once freshchat's API is live. */
 export function ready(): Promise<void> {
   return readyPromise ?? Promise.resolve()
 }
 
+/** Set the current visitor on freshchat. Supports anonymous → identified
+ *  transitions and provider-specific verification (HMAC/JWT/callback). */
 export function identify(identity: Identity): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   if (identity.verification && identity.verification.kind !== "jwt") {
@@ -254,6 +262,8 @@ export function identify(identity: Identity): Promise<void> {
   })
 }
 
+/** Emit a custom event to freshchat. `metadata` is typed as
+ *  `EventMetadata` (a JSON-serialisable record). */
 export function track<T extends EventMetadata = EventMetadata>(
   event: string,
   metadata?: T,
@@ -262,6 +272,8 @@ export function track<T extends EventMetadata = EventMetadata>(
   return queue.enqueue((widget) => widget.track?.(event, metadata))
 }
 
+/** Notify freshchat of an SPA route change so its targeting & session
+ *  tracking stay accurate. */
 export function pageView(info?: { path?: string; locale?: string }): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((widget) => {
@@ -270,71 +282,86 @@ export function pageView(info?: { path?: string; locale?: string }): Promise<voi
   })
 }
 
+/** Show / open the freshchat widget. */
 export function show(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((widget) => widget.show())
 }
 
+/** Hide / close the freshchat widget. */
 export function hide(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((widget) => widget.hide())
 }
 
+/** Open / expand the chat panel. */
 export function open(opts?: { name?: string }): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((widget) => widget.open(opts))
 }
 
+/** Close / collapse the chat panel. */
 export function close(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((widget) => widget.close())
 }
 
+/** Switch the widget's locale at runtime. */
 export function setLocale(locale: string): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((widget) => widget.user.setLocale?.(locale))
 }
 
+/** Set the conversation tags. */
 export function setTags(tags: string[]): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((widget) => widget.setTags?.(tags))
 }
 
+/** Filter the FAQ list by tags. */
 export function setFaqTags(payload: { tags: string[]; filterType?: string }): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((widget) => widget.setFaqTags?.(payload))
 }
 
+/** Apply runtime config overrides. */
 export function setConfig(config: Record<string, unknown>): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((widget) => widget.setConfig?.(config))
 }
 
+/** Provide variables to the conversation bot. */
 export function setBotVariables(vars: Record<string, unknown>): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((widget) => widget.conversation?.setBotVariables?.(vars))
 }
 
+/** Set custom conversation properties. */
 export function setConversationProperties(props: Record<string, unknown>): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((widget) => widget.conversation?.setConversationProperties?.(props))
 }
 
+/** Send a page-view to the vendor with explicit url and title. */
 export function trackPage(url: string, title?: string): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((widget) => widget.trackPage?.(url, title))
 }
 
+/** Synchronous getter — `true` when the widget panel is open. */
 export function isOpen(): boolean | undefined {
   if (!isBrowser()) return undefined
   return w().fcWidget?.isOpen?.()
 }
 
+/** Synchronous getter — `true` once the widget chrome has loaded. */
 export function isLoaded(): boolean | undefined {
   if (!isBrowser()) return undefined
   return w().fcWidget?.isLoaded?.()
 }
 
+/** Subscribe to the provider's typed lifecycle/event stream. Returns
+ *  an unsubscribe function. */
 export function on(event: FreshchatEventName, listener: (payload?: unknown) => void): () => void {
   let set = eventListeners.get(event)
   if (!set) {
@@ -345,11 +372,15 @@ export function on(event: FreshchatEventName, listener: (payload?: unknown) => v
   return () => set?.delete(listener)
 }
 
+/** Subscribe to freshchat's unread-count updates. Returns an unsubscribe
+ *  function. */
 export function onUnreadCountChange(listener: (count: number) => void): () => void {
   unreadListeners.add(listener)
   return () => unreadListeners.delete(listener)
 }
 
+/** End the freshchat session without removing the CDN script. The
+ *  provider can be re-identified with `identify()` afterwards. */
 export function shutdown(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue
@@ -363,6 +394,8 @@ export function shutdown(): Promise<void> {
     })
 }
 
+/** Hard reset: remove the injected script, clear globals & listeners,
+ *  return to the idle lifecycle state. */
 export async function destroy(): Promise<void> {
   if (!isBrowser()) return
   await shutdown().catch(() => undefined)
@@ -382,22 +415,28 @@ export async function destroy(): Promise<void> {
   lifecycle.transition("idle")
 }
 
+/** Read the wrapper's currently-resolved configuration. */
 export function getConfig(): { token?: string; host?: string } {
   return { token: currentToken, host: currentHost }
 }
 
+/** Read the current visitor identity snapshot. */
 export function getIdentity(): IdentityState {
   return store.get()
 }
 
+/** Subscribe to identity transitions (anonymous ↔ identified). Returns an
+ *  unsubscribe function. */
 export function onIdentityChange(listener: IdentityListener): () => void {
   return store.onChange(listener)
 }
 
+/** Synchronous check — true once the widget is in the `ready` state. */
 export function isReady(): boolean {
   return lifecycle.state() === "ready"
 }
 
+/** Current lifecycle state: `idle` | `loading` | `ready` | `shutdown`. */
 export function state(): "idle" | "loading" | "ready" | "shutdown" {
   return lifecycle.state()
 }

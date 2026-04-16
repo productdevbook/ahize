@@ -35,6 +35,7 @@ const queue = createQueue<OlarkFn>()
 const store = createIdentityStore()
 const lifecycle = createLifecycle()
 
+/** Typed lifecycle/event names accepted by this provider's `on()`. */
 export type OlarkEventName =
   | "boxShow"
   | "boxHide"
@@ -66,6 +67,7 @@ const OLARK_EVENT_MAP: Record<OlarkEventName, string> = {
 
 const eventListeners = new Map<OlarkEventName, Set<(payload?: unknown) => void>>()
 
+/** Resolved visitor details returned by the provider. */
 export interface OlarkVisitorDetails {
   emailAddress?: string
   fullName?: string
@@ -78,6 +80,7 @@ export interface OlarkVisitorDetails {
   [key: string]: unknown
 }
 
+/** Load-time options for this provider's `load()` call. */
 export interface OlarkLoadOptions extends LoadOptions {
   siteId: string
   /** Initial agent group routing. */
@@ -86,6 +89,8 @@ export interface OlarkLoadOptions extends LoadOptions {
   locale?: string
 }
 
+/** Inject the olark CDN script and boot the widget. Queues any
+ *  methods called before the real API attaches; resolves when ready. */
 export async function load(options: OlarkLoadOptions): Promise<void> {
   if (!isBrowser()) return
   if (options.consent === false) return
@@ -135,11 +140,14 @@ export async function load(options: OlarkLoadOptions): Promise<void> {
   lifecycle.transition("ready")
 }
 
+/** Promise that resolves once olark's API is live. */
 export function ready(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue(() => {})
 }
 
+/** Set the current visitor on olark. Supports anonymous → identified
+ *  transitions and provider-specific verification (HMAC/JWT/callback). */
 export function identify(identity: Identity): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   store.identify(identity)
@@ -151,6 +159,8 @@ export function identify(identity: Identity): Promise<void> {
   })
 }
 
+/** Emit a custom event to olark. `metadata` is typed as
+ *  `EventMetadata` (a JSON-serialisable record). */
 export function track<T extends EventMetadata = EventMetadata>(
   event: string,
   metadata?: T,
@@ -161,55 +171,67 @@ export function track<T extends EventMetadata = EventMetadata>(
   })
 }
 
+/** Notify olark of an SPA route change so its targeting & session
+ *  tracking stay accurate. */
 export function pageView(_info?: { path?: string; locale?: string }): Promise<void> {
   return Promise.resolve()
 }
 
+/** Show / open the olark widget. */
 export function show(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((olark) => olark("api.box.show"))
 }
 
+/** Hide / close the olark widget. */
 export function hide(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((olark) => olark("api.box.hide"))
 }
 
+/** Expand the box to its larger size. */
 export function expand(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((olark) => olark("api.box.expand"))
 }
 
+/** Shrink the box to its smaller size. */
 export function shrink(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((olark) => olark("api.box.shrink"))
 }
 
+/** Switch the widget's locale at runtime. */
 export function setLocale(locale: string): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((olark) => olark("api.box.setLocale", locale))
 }
 
+/** Route the visitor to a specific operator group. */
 export function setOperatorGroup(group: string): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((olark) => olark("api.chat.setOperatorGroup", { group }))
 }
 
+/** Send a message to the visitor (operator-style). */
 export function sendMessageToVisitor(body: string): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((olark) => olark("api.chat.sendMessageToVisitor", { body }))
 }
 
+/** Send a notification to the visitor. */
 export function sendNotificationToVisitor(body: string): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((olark) => olark("api.chat.sendNotificationToVisitor", { body }))
 }
 
+/** Send a notification to the operator. */
 export function sendNotificationToOperator(body: string): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((olark) => olark("api.chat.sendNotificationToOperator", { body }))
 }
 
+/** Update the operator-side visitor nickname. */
 export function updateVisitorNickname(args: {
   snippet: string
   hideDefault?: boolean
@@ -218,11 +240,13 @@ export function updateVisitorNickname(args: {
   return queue.enqueue((olark) => olark("api.chat.updateVisitorNickname", args))
 }
 
+/** Update the operator-side visitor status snippet(s). */
 export function updateVisitorStatus(args: { snippet: string | string[] }): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((olark) => olark("api.chat.updateVisitorStatus", args))
 }
 
+/** Read the resolved visitor details from the provider. */
 export function getVisitorDetails(): Promise<OlarkVisitorDetails | undefined> {
   if (!isBrowser()) return Promise.resolve(undefined)
   return new Promise((resolve) => {
@@ -236,6 +260,8 @@ export function getVisitorDetails(): Promise<OlarkVisitorDetails | undefined> {
   })
 }
 
+/** Subscribe to the provider's typed lifecycle/event stream. Returns
+ *  an unsubscribe function. */
 export function on(event: OlarkEventName, listener: (payload?: unknown) => void): () => void {
   let set = eventListeners.get(event)
   if (!set) {
@@ -246,6 +272,8 @@ export function on(event: OlarkEventName, listener: (payload?: unknown) => void)
   return () => set?.delete(listener)
 }
 
+/** End the olark session without removing the CDN script. The
+ *  provider can be re-identified with `identify()` afterwards. */
 export function shutdown(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue
@@ -259,6 +287,8 @@ export function shutdown(): Promise<void> {
     })
 }
 
+/** Hard reset: remove the injected script, clear globals & listeners,
+ *  return to the idle lifecycle state. */
 export async function destroy(): Promise<void> {
   if (!isBrowser()) return
   await shutdown().catch(() => undefined)
@@ -272,18 +302,23 @@ export async function destroy(): Promise<void> {
   lifecycle.transition("idle")
 }
 
+/** Read the current visitor identity snapshot. */
 export function getIdentity(): IdentityState {
   return store.get()
 }
 
+/** Subscribe to identity transitions (anonymous ↔ identified). Returns an
+ *  unsubscribe function. */
 export function onIdentityChange(listener: IdentityListener): () => void {
   return store.onChange(listener)
 }
 
+/** Synchronous check — true once the widget is in the `ready` state. */
 export function isReady(): boolean {
   return lifecycle.state() === "ready"
 }
 
+/** Current lifecycle state: `idle` | `loading` | `ready` | `shutdown`. */
 export function state(): "idle" | "loading" | "ready" | "shutdown" {
   return lifecycle.state()
 }

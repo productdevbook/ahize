@@ -46,10 +46,12 @@ let currentSettings: SendbirdWidgetSettings | undefined
 let trackForwarder: ((event: string, metadata?: EventMetadata) => void) | undefined
 let sunsetWarned = false
 
+/** Error class — thrown when this provider hits an unsupported case. */
 export class SendbirdUnsupportedError extends AhizeError {
   override name = "SendbirdUnsupportedError"
 }
 
+/** Load-time options for this provider's `load()` call. */
 export interface SendbirdLoadOptions extends LoadOptions {
   applicationId: string
   botId: string
@@ -59,6 +61,8 @@ export interface SendbirdLoadOptions extends LoadOptions {
   onTrack?: (event: string, metadata?: EventMetadata) => void
 }
 
+/** Inject the sendbird CDN script and boot the widget. Queues any
+ *  methods called before the real API attaches; resolves when ready. */
 export async function load(options: SendbirdLoadOptions): Promise<void> {
   if (!isBrowser()) return
   if (options.consent === false) return
@@ -106,10 +110,13 @@ export async function load(options: SendbirdLoadOptions): Promise<void> {
   lifecycle.transition("ready")
 }
 
+/** Promise that resolves once sendbird's API is live. */
 export function ready(): Promise<void> {
   return Promise.resolve()
 }
 
+/** Set the current visitor on sendbird. Supports anonymous → identified
+ *  transitions and provider-specific verification (HMAC/JWT/callback). */
 export async function identify(identity: Identity): Promise<void> {
   if (!isBrowser()) return
   // Identity changes require a remount in Sendbird's model.
@@ -129,6 +136,8 @@ export async function identify(identity: Identity): Promise<void> {
   store.identify(identity)
 }
 
+/** Emit a custom event to sendbird. `metadata` is typed as
+ *  `EventMetadata` (a JSON-serialisable record). */
 export function track<T extends EventMetadata = EventMetadata>(
   event: string,
   metadata?: T,
@@ -145,6 +154,8 @@ export function track<T extends EventMetadata = EventMetadata>(
   )
 }
 
+/** Notify sendbird of an SPA route change so its targeting & session
+ *  tracking stay accurate. */
 export function pageView(_info?: { path?: string; locale?: string }): Promise<void> {
   return Promise.resolve()
 }
@@ -157,18 +168,22 @@ function setLauncherDisplay(value: "block" | "none"): void {
   }
 }
 
+/** Show / open the sendbird widget. */
 export function show(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   setLauncherDisplay("block")
   return Promise.resolve()
 }
 
+/** Hide / close the sendbird widget. */
 export function hide(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   setLauncherDisplay("none")
   return Promise.resolve()
 }
 
+/** End the sendbird session without removing the CDN script. The
+ *  provider can be re-identified with `identify()` afterwards. */
 export function shutdown(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   store.reset()
@@ -176,6 +191,8 @@ export function shutdown(): Promise<void> {
   return Promise.resolve()
 }
 
+/** Hard reset: remove the injected script, clear globals & listeners,
+ *  return to the idle lifecycle state. */
 export async function destroy(): Promise<void> {
   if (!isBrowser()) return
   await shutdown().catch(() => undefined)
@@ -189,18 +206,23 @@ export async function destroy(): Promise<void> {
   lifecycle.transition("idle")
 }
 
+/** Read the current visitor identity snapshot. */
 export function getIdentity(): IdentityState {
   return store.get()
 }
 
+/** Subscribe to identity transitions (anonymous ↔ identified). Returns an
+ *  unsubscribe function. */
 export function onIdentityChange(listener: IdentityListener): () => void {
   return store.onChange(listener)
 }
 
+/** Synchronous check — true once the widget is in the `ready` state. */
 export function isReady(): boolean {
   return lifecycle.state() === "ready"
 }
 
+/** Current lifecycle state: `idle` | `loading` | `ready` | `shutdown`. */
 export function state(): "idle" | "loading" | "ready" | "shutdown" {
   return lifecycle.state()
 }

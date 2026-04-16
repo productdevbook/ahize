@@ -37,8 +37,10 @@ const lifecycle = createLifecycle()
 let readyPromise: Promise<void> | undefined
 let readyResolve: (() => void) | undefined
 
+/** Mode/variant value accepted by this provider. */
 export type BeaconMode = "selfService" | "neutral" | "askFirst"
 
+/** Vendor-specific configuration object. */
 export interface BeaconDisplayConfig {
   style?: "icon" | "text" | "iconAndText"
   text?: string
@@ -48,6 +50,7 @@ export interface BeaconDisplayConfig {
   verticalOffset?: number | string
 }
 
+/** Vendor-specific configuration object. */
 export interface BeaconMessagingConfig {
   chatEnabled?: boolean
   contactForm?: {
@@ -58,6 +61,7 @@ export interface BeaconMessagingConfig {
   }
 }
 
+/** Vendor-specific configuration object. */
 export interface BeaconConfig {
   docsEnabled?: boolean
   messagingEnabled?: boolean
@@ -73,12 +77,15 @@ export interface BeaconConfig {
   labels?: Record<string, string>
 }
 
+/** Load-time options for this provider's `load()` call. */
 export interface HelpScoutLoadOptions extends LoadOptions {
   beaconId: string
   /** Optional Beacon `init` config object (display, color, mode, labels, etc.). */
   config?: BeaconConfig
 }
 
+/** Inject the helpscout CDN script and boot the widget. Queues any
+ *  methods called before the real API attaches; resolves when ready. */
 export async function load(options: HelpScoutLoadOptions): Promise<void> {
   if (!isBrowser()) return
   if (options.consent === false) return
@@ -124,10 +131,13 @@ export async function load(options: HelpScoutLoadOptions): Promise<void> {
   lifecycle.transition("ready")
 }
 
+/** Promise that resolves once helpscout's API is live. */
 export function ready(): Promise<void> {
   return readyPromise ?? Promise.resolve()
 }
 
+/** Set the current visitor on helpscout. Supports anonymous → identified
+ *  transitions and provider-specific verification (HMAC/JWT/callback). */
 export function identify(identity: Identity): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   if (identity.verification && identity.verification.kind !== "hmac") {
@@ -145,6 +155,8 @@ export function identify(identity: Identity): Promise<void> {
   })
 }
 
+/** Emit a custom event to helpscout. `metadata` is typed as
+ *  `EventMetadata` (a JSON-serialisable record). */
 export function track<T extends EventMetadata = EventMetadata>(
   event: string,
   metadata?: T,
@@ -155,12 +167,15 @@ export function track<T extends EventMetadata = EventMetadata>(
   })
 }
 
+/** Notify helpscout of an SPA route change so its targeting & session
+ *  tracking stay accurate. */
 export function pageView(info?: { path?: string }): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   const url = info?.path ?? location.href
   return queue.enqueue((Beacon) => Beacon("event", { type: "page-viewed", url }))
 }
 
+/** Suggest help-center articles to the visitor (max 10). */
 export function suggest(articleIds: string[]): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   let ids = articleIds
@@ -173,6 +188,7 @@ export function suggest(articleIds: string[]): Promise<void> {
   return queue.enqueue((Beacon) => Beacon("suggest", ids))
 }
 
+/** Documented navigation routes inside the widget. */
 export type BeaconRoute =
   | "/ask/"
   | "/ask/message/"
@@ -182,16 +198,19 @@ export type BeaconRoute =
   | "/previous-messages/"
   | (string & {})
 
+/** Navigate to a specific screen / route inside the widget. */
 export function navigate(path: BeaconRoute): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((Beacon) => Beacon("navigate", path))
 }
 
+/** Trigger a help-center / docs search inside the widget. */
 export function search(query: string): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((Beacon) => Beacon("search", query))
 }
 
+/** Open a specific article in the widget. */
 export function article(
   articleId: string,
   options?: { type?: "sidebar" | "modal" },
@@ -202,31 +221,37 @@ export function article(
   )
 }
 
+/** Attach short-lived conversation attributes (key/value pairs). */
 export function sessionData(data: Record<string, string>): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((Beacon) => Beacon("session-data", data))
 }
 
+/** Apply runtime configuration overrides to the widget. */
 export function config(next: BeaconConfig): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((Beacon) => Beacon("config", next))
 }
 
+/** Reset transient widget state (form fields, etc.). */
 export function reset(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((Beacon) => Beacon("reset"))
 }
 
+/** Toggle the chat panel between open and closed. */
 export function toggle(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((Beacon) => Beacon("toggle"))
 }
 
+/** Open the widget pre-filled with a question for AI Answers. */
 export function askQuestion(question: string): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((Beacon) => Beacon("ask-question", question))
 }
 
+/** Programmatically display a triggered message by id. */
 export function showMessage(
   id: string,
   options?: { delay?: number; force?: boolean },
@@ -237,6 +262,7 @@ export function showMessage(
   )
 }
 
+/** Read the widget's current introspection state. */
 export function info(): Promise<unknown> {
   if (!isBrowser()) return Promise.resolve(undefined)
   return new Promise((resolve) => {
@@ -249,6 +275,7 @@ export function info(): Promise<unknown> {
   })
 }
 
+/** Pre-fill the contact form fields. */
 export function prefill(payload: {
   name?: string
   email?: string
@@ -262,6 +289,7 @@ export function prefill(payload: {
   return queue.enqueue((Beacon) => Beacon("prefill", payload))
 }
 
+/** Typed lifecycle/event names accepted by `on()` / `once()`. */
 export type BeaconEvent =
   | "ready"
   | "open"
@@ -275,6 +303,8 @@ export type BeaconEvent =
   | "message-closed"
   | "message-triggered"
 
+/** Subscribe to the provider's typed lifecycle/event stream. Returns
+ *  an unsubscribe function. */
 export function on(event: BeaconEvent, listener: (payload: unknown) => void): () => void {
   if (!isBrowser()) return () => {}
   let removed = false
@@ -287,6 +317,7 @@ export function on(event: BeaconEvent, listener: (payload: unknown) => void): ()
   }
 }
 
+/** One-shot variant of `on()` — fires the listener at most once. */
 export function once(event: BeaconEvent, listener: (payload: unknown) => void): () => void {
   if (!isBrowser()) return () => {}
   let removed = false
@@ -299,16 +330,20 @@ export function once(event: BeaconEvent, listener: (payload: unknown) => void): 
   }
 }
 
+/** Show / open the helpscout widget. */
 export function show(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((Beacon) => Beacon("open"))
 }
 
+/** Hide / close the helpscout widget. */
 export function hide(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((Beacon) => Beacon("close"))
 }
 
+/** End the helpscout session without removing the CDN script. The
+ *  provider can be re-identified with `identify()` afterwards. */
 export function shutdown(opts?: {
   endActiveChat?: boolean
   clearMessages?: boolean
@@ -324,6 +359,8 @@ export function shutdown(opts?: {
     })
 }
 
+/** Hard reset: remove the injected script, clear globals & listeners,
+ *  return to the idle lifecycle state. */
 export async function destroy(): Promise<void> {
   if (!isBrowser()) return
   await shutdown().catch(() => undefined)
@@ -340,18 +377,23 @@ export async function destroy(): Promise<void> {
   lifecycle.transition("idle")
 }
 
+/** Read the current visitor identity snapshot. */
 export function getIdentity(): IdentityState {
   return store.get()
 }
 
+/** Subscribe to identity transitions (anonymous ↔ identified). Returns an
+ *  unsubscribe function. */
 export function onIdentityChange(listener: IdentityListener): () => void {
   return store.onChange(listener)
 }
 
+/** Synchronous check — true once the widget is in the `ready` state. */
 export function isReady(): boolean {
   return lifecycle.state() === "ready"
 }
 
+/** Current lifecycle state: `idle` | `loading` | `ready` | `shutdown`. */
 export function state(): "idle" | "loading" | "ready" | "shutdown" {
   return lifecycle.state()
 }

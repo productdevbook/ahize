@@ -28,6 +28,7 @@ interface ReactLike {
   useCallback: <F>(cb: F, deps: readonly unknown[]) => F
 }
 
+/** Options for the `useAhize()` composable. */
 export interface UseAhizeOptions<TLoadOptions extends LoadOptions> {
   provider: AhizeProvider
   options: TLoadOptions
@@ -35,6 +36,7 @@ export interface UseAhizeOptions<TLoadOptions extends LoadOptions> {
   destroyOnUnmount?: boolean
 }
 
+/** Reactive state + bound methods returned by `useAhize()`. */
 export interface UseAhizeReturn {
   isReady: boolean
   identity: IdentityState
@@ -45,8 +47,10 @@ export interface UseAhizeReturn {
   pageView: AhizeProvider["pageView"]
 }
 
+/** Hook signature returned by the corresponding factory. */
 export type AhizeReactHook = <T extends LoadOptions>(opts: UseAhizeOptions<T>) => UseAhizeReturn
 
+/** Build a framework-agnostic React `useAhize` hook (consumer brings their own React). */
 export function createUseAhize(React: ReactLike): AhizeReactHook {
   return function useAhize<T extends LoadOptions>(opts: UseAhizeOptions<T>): UseAhizeReturn {
     const { provider, options, destroyOnUnmount = false } = opts

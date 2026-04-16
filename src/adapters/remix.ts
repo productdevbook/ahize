@@ -26,6 +26,7 @@ interface RemixHooks {
   useLocation(): { pathname: string; search: string }
 }
 
+/** Options for the hook returned by `createRemixAhize()`. */
 export interface RemixAhizeOptions<T extends LoadOptions> {
   provider: AhizeProvider
   options: T
@@ -33,8 +34,11 @@ export interface RemixAhizeOptions<T extends LoadOptions> {
   autoPageView?: boolean
 }
 
+/** Hook signature returned by `createRemixAhize()`. */
 export type RemixAhizeHook = <T extends LoadOptions>(opts: RemixAhizeOptions<T>) => void
 
+/** Build a Remix hook that boots the provider and fires `pageView()`
+ *  on every `useLocation()` change. */
 export function createRemixAhize(React: ReactLike, remix: RemixHooks): RemixAhizeHook {
   return function useAhize<T extends LoadOptions>(opts: RemixAhizeOptions<T>): void {
     React.useEffect(() => {

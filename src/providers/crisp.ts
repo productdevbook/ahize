@@ -47,6 +47,7 @@ const store = createIdentityStore()
 const lifecycle = createLifecycle()
 const unreadListeners = new Set<(count: number) => void>()
 
+/** Typed lifecycle/event names accepted by this provider's `on()`. */
 export type CrispEventName =
   | "chatOpened"
   | "chatClosed"
@@ -91,6 +92,7 @@ function validateDataKey(key: string): void {
   }
 }
 
+/** Load-time options for this provider's `load()` call. */
 export interface CrispLoadOptions extends LoadOptions {
   websiteId: string
   tokenId?: string
@@ -109,6 +111,8 @@ export interface CrispLoadOptions extends LoadOptions {
   lockFullview?: boolean
 }
 
+/** Inject the crisp CDN script and boot the widget. Queues any
+ *  methods called before the real API attaches; resolves when ready. */
 export async function load(options: CrispLoadOptions): Promise<void> {
   if (!isBrowser()) return
   if (options.consent === false) return
@@ -168,10 +172,12 @@ export async function load(options: CrispLoadOptions): Promise<void> {
   lifecycle.transition("ready")
 }
 
+/** Promise that resolves once crisp's API is live. */
 export function ready(): Promise<void> {
   return readyPromise ?? Promise.resolve()
 }
 
+/** Set arbitrary session data on the visitor. */
 export function setData(data: Record<string, string | number | boolean>): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   const pairs: unknown[][] = []
@@ -187,6 +193,7 @@ export function setData(data: Record<string, string | number | boolean>): Promis
   return Promise.resolve()
 }
 
+/** Company metadata accepted by `setCompany()`. */
 export interface CrispCompany {
   name?: string
   url?: string
@@ -194,12 +201,15 @@ export interface CrispCompany {
   employment?: [title: string, role?: string]
   geolocation?: { country?: string; city?: string }
 }
+/** Attach company facts to the visitor. */
 export function setCompany(company: CrispCompany): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   bus().push(["set", "user:company", [company.name ?? "", company]])
   return Promise.resolve()
 }
 
+/** Subscribe to crisp's unread-count updates. Returns an unsubscribe
+ *  function. */
 export function onUnreadCountChange(listener: (count: number) => void): () => void {
   unreadListeners.add(listener)
   if (isBrowser()) {
@@ -214,12 +224,15 @@ export function onUnreadCountChange(listener: (count: number) => void): () => vo
   return () => unreadListeners.delete(listener)
 }
 
+/** Hot-swap the configuration without a full destroy/load cycle. */
 export async function reconfigure(next: CrispLoadOptions): Promise<void> {
   if (!isBrowser()) return
   await destroy()
   await load(next)
 }
 
+/** Set the current visitor on crisp. Supports anonymous → identified
+ *  transitions and provider-specific verification (HMAC/JWT/callback). */
 export function identify(identity: Identity): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   if (identity.verification && identity.verification.kind !== "hmac") {
@@ -242,6 +255,8 @@ export function identify(identity: Identity): Promise<void> {
   return Promise.resolve()
 }
 
+/** Notify crisp of an SPA route change so its targeting & session
+ *  tracking stay accurate. */
 export function pageView(info?: { path?: string; locale?: string }): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   const q = bus()
@@ -250,6 +265,8 @@ export function pageView(info?: { path?: string; locale?: string }): Promise<voi
   return Promise.resolve()
 }
 
+/** Emit a custom event to crisp. `metadata` is typed as
+ *  `EventMetadata` (a JSON-serialisable record). */
 export function track<T extends EventMetadata = EventMetadata>(
   event: string,
   metadata?: T,
@@ -259,6 +276,7 @@ export function track<T extends EventMetadata = EventMetadata>(
   return Promise.resolve()
 }
 
+/** Show / open the crisp widget. */
 export function show(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   // Reveal the chat without forcibly expanding the panel.
@@ -266,84 +284,99 @@ export function show(): Promise<void> {
   return Promise.resolve()
 }
 
+/** Hide / close the crisp widget. */
 export function hide(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   bus().push(["do", "chat:hide"])
   return Promise.resolve()
 }
 
+/** Open / expand the chat panel. */
 export function open(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   bus().push(["do", "chat:open"])
   return Promise.resolve()
 }
 
+/** Close / collapse the chat panel. */
 export function close(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   bus().push(["do", "chat:close"])
   return Promise.resolve()
 }
 
+/** Toggle the chat panel between open and closed. */
 export function toggle(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   bus().push(["do", "chat:toggle"])
   return Promise.resolve()
 }
 
+/** Send a message programmatically as the visitor. */
 export function sendMessage(text: string): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   bus().push(["do", "message:send", ["text", text]])
   return Promise.resolve()
 }
 
+/** Display a local-only operator message in the chat. */
 export function showLocalMessage(text: string): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   bus().push(["do", "message:show", ["text", text]])
   return Promise.resolve()
 }
 
+/** Mark all unread messages as read. */
 export function markRead(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   bus().push(["do", "message:read"])
   return Promise.resolve()
 }
 
+/** Pre-fill the composer's message input. */
 export function setMessageText(text: string): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   bus().push(["set", "message:text", [text]])
   return Promise.resolve()
 }
 
+/** Set the visitor's avatar URL. */
 export function setUserAvatar(url: string): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   bus().push(["set", "user:avatar", [url]])
   return Promise.resolve()
 }
 
+/** Tag the session with segments (overwrite or append). */
 export function setSessionSegments(segments: string[], overwrite = false): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   bus().push(["set", "session:segments", [segments, overwrite]])
   return Promise.resolve()
 }
 
+/** Trigger a helpdesk search inside the widget. */
 export function helpdeskSearch(query: string): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   bus().push(["do", "helpdesk:search", [query]])
   return Promise.resolve()
 }
 
+/** Open a helpdesk article inside the widget. */
 export function helpdeskArticleOpen(locale: string, slug: string): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   bus().push(["do", "helpdesk:article:open", [locale, slug]])
   return Promise.resolve()
 }
 
+/** Run a vendor-side trigger by id. */
 export function runTrigger(triggerId: string): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   bus().push(["do", "trigger:run", [triggerId]])
   return Promise.resolve()
 }
 
+/** Subscribe to the provider's typed lifecycle/event stream. Returns
+ *  an unsubscribe function. */
 export function on(event: CrispEventName, listener: (payload?: unknown) => void): () => void {
   let set = eventListeners.get(event)
   if (!set) {
@@ -354,6 +387,8 @@ export function on(event: CrispEventName, listener: (payload?: unknown) => void)
   return () => set?.delete(listener)
 }
 
+/** End the crisp session without removing the CDN script. The
+ *  provider can be re-identified with `identify()` afterwards. */
 export function shutdown(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   bus().push(["do", "session:reset"])
@@ -362,6 +397,8 @@ export function shutdown(): Promise<void> {
   return Promise.resolve()
 }
 
+/** Hard reset: remove the injected script, clear globals & listeners,
+ *  return to the idle lifecycle state. */
 export async function destroy(): Promise<void> {
   if (!isBrowser()) return
   await shutdown().catch(() => undefined)
@@ -380,18 +417,23 @@ export async function destroy(): Promise<void> {
   lifecycle.transition("idle")
 }
 
+/** Read the current visitor identity snapshot. */
 export function getIdentity(): IdentityState {
   return store.get()
 }
 
+/** Subscribe to identity transitions (anonymous ↔ identified). Returns an
+ *  unsubscribe function. */
 export function onIdentityChange(listener: IdentityListener): () => void {
   return store.onChange(listener)
 }
 
+/** Synchronous check — true once the widget is in the `ready` state. */
 export function isReady(): boolean {
   return lifecycle.state() === "ready"
 }
 
+/** Current lifecycle state: `idle` | `loading` | `ready` | `shutdown`. */
 export function state(): "idle" | "loading" | "ready" | "shutdown" {
   return lifecycle.state()
 }

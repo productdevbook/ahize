@@ -60,9 +60,11 @@ const lifecycle = createLifecycle()
 let currentSubdomain: string | undefined
 let currentButtonId: string | undefined
 
+/** Typed lifecycle/event names accepted by this provider's `on()`. */
 export type LiveAgentEventName = "online" | "offline" | "chatStarted" | "chatEnded"
 const eventListeners = new Map<LiveAgentEventName, Set<() => void>>()
 
+/** Load-time options for this provider's `load()` call. */
 export interface LiveAgentLoadOptions extends LoadOptions {
   /** e.g. "yourcompany" — yourcompany.ladesk.com */
   accountSubdomain: string
@@ -73,6 +75,8 @@ export interface LiveAgentLoadOptions extends LoadOptions {
   disableOnlineVisitorsTracking?: boolean
 }
 
+/** Inject the liveagent CDN script and boot the widget. Queues any
+ *  methods called before the real API attaches; resolves when ready. */
 export async function load(options: LiveAgentLoadOptions): Promise<void> {
   if (!isBrowser()) return
   if (options.consent === false) return
@@ -134,11 +138,14 @@ export async function load(options: LiveAgentLoadOptions): Promise<void> {
   lifecycle.transition("ready")
 }
 
+/** Promise that resolves once liveagent's API is live. */
 export function ready(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue(() => {})
 }
 
+/** Set the current visitor on liveagent. Supports anonymous → identified
+ *  transitions and provider-specific verification (HMAC/JWT/callback). */
 export function identify(identity: Identity): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   store.identify(identity)
@@ -151,6 +158,8 @@ export function identify(identity: Identity): Promise<void> {
   })
 }
 
+/** Emit a custom event to liveagent. `metadata` is typed as
+ *  `EventMetadata` (a JSON-serialisable record). */
 export function track<T extends EventMetadata = EventMetadata>(
   event: string,
   metadata?: T,
@@ -161,6 +170,8 @@ export function track<T extends EventMetadata = EventMetadata>(
   })
 }
 
+/** Notify liveagent of an SPA route change so its targeting & session
+ *  tracking stay accurate. */
 export function pageView(info?: { path?: string; locale?: string }): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((api) => {
@@ -168,6 +179,7 @@ export function pageView(info?: { path?: string; locale?: string }): Promise<voi
   })
 }
 
+/** Update a single user property without touching the others. */
 export function addUserDetail(
   key: "email" | "firstName" | "lastName" | "phone",
   value: string,
@@ -176,31 +188,38 @@ export function addUserDetail(
   return queue.enqueue((api) => api.addUserDetail?.(key, value))
 }
 
+/** Set a custom ticket field. */
 export function addTicketField(key: string, value: unknown): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((api) => api.addTicketField?.(key, value))
 }
 
+/** Clear all user properties and contact/ticket fields. */
 export function clearAllUserDetails(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((api) => api.clearAllUserDetails?.())
 }
 
+/** Set the visitor's current page URL inside the conversation. */
 export function setVisitorLocation(url: string): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((api) => api.setVisitorLocation?.(url))
 }
 
+/** Create an offline contact-form widget (alternative to createButton). */
 export function createForm(formId: string, container?: unknown): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((api) => api.createForm?.(formId, container))
 }
 
+/** Synchronous check — `true` if any widget is currently open. */
 export function hasOpenedWidget(): boolean | undefined {
   if (!isBrowser()) return undefined
   return w().LiveAgent?.instance?.hasOpenedWidget?.()
 }
 
+/** Subscribe to the provider's typed lifecycle/event stream. Returns
+ *  an unsubscribe function. */
 export function on(event: LiveAgentEventName, listener: () => void): () => void {
   let set = eventListeners.get(event)
   if (!set) {
@@ -211,6 +230,7 @@ export function on(event: LiveAgentEventName, listener: () => void): () => void 
   return () => set?.delete(listener)
 }
 
+/** Show / open the liveagent widget. */
 export function show(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue(() => {
@@ -218,6 +238,7 @@ export function show(): Promise<void> {
   })
 }
 
+/** Hide / close the liveagent widget. */
 export function hide(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((api) => {
@@ -225,6 +246,8 @@ export function hide(): Promise<void> {
   })
 }
 
+/** End the liveagent session without removing the CDN script. The
+ *  provider can be re-identified with `identify()` afterwards. */
 export function shutdown(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue
@@ -235,6 +258,8 @@ export function shutdown(): Promise<void> {
     })
 }
 
+/** Hard reset: remove the injected script, clear globals & listeners,
+ *  return to the idle lifecycle state. */
 export async function destroy(): Promise<void> {
   if (!isBrowser()) return
   await shutdown().catch(() => undefined)
@@ -250,22 +275,28 @@ export async function destroy(): Promise<void> {
   lifecycle.transition("idle")
 }
 
+/** Read the wrapper's currently-resolved configuration. */
 export function getConfig(): { subdomain?: string; buttonId?: string } {
   return { subdomain: currentSubdomain, buttonId: currentButtonId }
 }
 
+/** Read the current visitor identity snapshot. */
 export function getIdentity(): IdentityState {
   return store.get()
 }
 
+/** Subscribe to identity transitions (anonymous ↔ identified). Returns an
+ *  unsubscribe function. */
 export function onIdentityChange(listener: IdentityListener): () => void {
   return store.onChange(listener)
 }
 
+/** Synchronous check — true once the widget is in the `ready` state. */
 export function isReady(): boolean {
   return lifecycle.state() === "ready"
 }
 
+/** Current lifecycle state: `idle` | `loading` | `ready` | `shutdown`. */
 export function state(): "idle" | "loading" | "ready" | "shutdown" {
   return lifecycle.state()
 }

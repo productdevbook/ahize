@@ -20,6 +20,7 @@ interface SvelteKitNavApi {
   ) => void
 }
 
+/** Options for `setupAhize()`. */
 export interface SvelteKitAhizeOptions<T extends LoadOptions> {
   provider: AhizeProvider
   options: T
@@ -27,6 +28,8 @@ export interface SvelteKitAhizeOptions<T extends LoadOptions> {
   autoPageView?: boolean
 }
 
+/** Boot the provider and wire `afterNavigate` to `pageView()`. Call
+ *  once from your root `+layout.svelte`. */
 export async function setupAhize<T extends LoadOptions>(
   opts: SvelteKitAhizeOptions<T>,
   navApi?: SvelteKitNavApi,

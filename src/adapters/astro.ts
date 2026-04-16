@@ -16,6 +16,7 @@ interface AhizeProvider {
   pageView(info?: { path?: string; locale?: string }): Promise<void>
 }
 
+/** Options for `mountAhize()`. */
 export interface AstroAhizeOptions<T extends LoadOptions> {
   provider: AhizeProvider
   options: T
@@ -24,6 +25,8 @@ export interface AstroAhizeOptions<T extends LoadOptions> {
   autoPageView?: boolean
 }
 
+/** Boot a provider from an Astro island. Use with `is:inline` or
+ *  client-side scripts. */
 export async function mountAhize<T extends LoadOptions>(opts: AstroAhizeOptions<T>): Promise<void> {
   if (typeof window === "undefined") return
   await opts.provider.load(opts.options)

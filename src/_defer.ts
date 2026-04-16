@@ -1,5 +1,7 @@
 import { isBrowser } from "./_loader.ts"
 
+/** Local copy of `DeferStrategy` (mirrors `_types.ts`) — when to inject
+ *  the CDN script. See `BaseLoadOptions.defer`. */
 export type DeferStrategy = "immediate" | "idle" | "interaction" | "manual"
 
 interface WindowWithIdle {
@@ -18,6 +20,9 @@ function win(): WindowWithIdle | undefined {
 
 const INTERACTION_EVENTS = ["pointerdown", "scroll", "keydown", "touchstart"] as const
 
+/** Resolve when the chosen `DeferStrategy` says it's time to inject the
+ *  script. `manual` returns a never-resolving promise; `immediate`
+ *  resolves synchronously. */
 export function waitForDefer(strategy: DeferStrategy, timeoutMs = 10_000): Promise<void> {
   if (strategy === "immediate") return Promise.resolve()
   if (strategy === "manual") return new Promise(() => {})

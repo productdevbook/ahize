@@ -145,6 +145,7 @@ function warnCollisions(): void {
   }
 }
 
+/** Typed lifecycle/event names accepted by this provider's `on()`. */
 export type TawkEventName =
   | "beforeLoad"
   | "load"
@@ -166,6 +167,7 @@ export type TawkEventName =
   | "prechatSubmit"
   | "offlineSubmit"
 
+/** Load-time options for this provider's `load()` call. */
 export interface TawkLoadOptions extends LoadOptions {
   propertyId: string
   widgetId?: string
@@ -179,6 +181,8 @@ export interface TawkLoadOptions extends LoadOptions {
   onBeforeLoad?: () => void
 }
 
+/** Inject the tawk CDN script and boot the widget. Queues any
+ *  methods called before the real API attaches; resolves when ready. */
 export async function load(options: TawkLoadOptions): Promise<void> {
   if (!isBrowser()) return
   if (options.consent === false) return
@@ -241,6 +245,8 @@ export async function load(options: TawkLoadOptions): Promise<void> {
   lifecycle.transition("ready")
 }
 
+/** Set the current visitor on tawk. Supports anonymous → identified
+ *  transitions and provider-specific verification (HMAC/JWT/callback). */
 export function identify(identity: Identity): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   if (identity.verification && identity.verification.kind !== "hmac") {
@@ -260,6 +266,8 @@ export function identify(identity: Identity): Promise<void> {
   })
 }
 
+/** Notify tawk of an SPA route change so its targeting & session
+ *  tracking stay accurate. */
 export function pageView(info?: { path?: string; locale?: string }): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((a) => {
@@ -270,6 +278,8 @@ export function pageView(info?: { path?: string; locale?: string }): Promise<voi
   })
 }
 
+/** Emit a custom event to tawk. `metadata` is typed as
+ *  `EventMetadata` (a JSON-serialisable record). */
 export function track<T extends EventMetadata = EventMetadata>(
   event: string,
   metadata?: T,
@@ -280,6 +290,7 @@ export function track<T extends EventMetadata = EventMetadata>(
   })
 }
 
+/** Show / open the tawk widget. */
 export function show(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((a) => {
@@ -287,6 +298,7 @@ export function show(): Promise<void> {
   })
 }
 
+/** Hide / close the tawk widget. */
 export function hide(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((a) => {
@@ -294,6 +306,8 @@ export function hide(): Promise<void> {
   })
 }
 
+/** End the tawk session without removing the CDN script. The
+ *  provider can be re-identified with `identify()` afterwards. */
 export function shutdown(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue
@@ -306,15 +320,19 @@ export function shutdown(): Promise<void> {
     })
 }
 
+/** Promise that resolves once tawk's API is live. */
 export function ready(): Promise<void> {
   return readyPromise ?? Promise.resolve()
 }
 
+/** Subscribe to tawk's unread-count updates. Returns an unsubscribe
+ *  function. */
 export function onUnreadCountChange(listener: (count: number) => void): () => void {
   unreadListeners.add(listener)
   return () => unreadListeners.delete(listener)
 }
 
+/** Swap to a different vendor widget at runtime. */
 export function switchWidget(
   options: { propertyId: string; widgetId: string },
   cb?: (err?: Error) => void,
@@ -333,45 +351,55 @@ function callMethod(name: keyof TawkAPI, ...args: unknown[]): Promise<void> {
   })
 }
 
+/** Maximize the widget to its full chat panel state. */
 export function maximize(): Promise<void> {
   return callMethod("maximize")
 }
 
+/** Minimize the widget to a collapsed launcher. */
 export function minimize(): Promise<void> {
   return callMethod("minimize")
 }
 
+/** Toggle the chat panel between open and closed. */
 export function toggle(): Promise<void> {
   return callMethod("toggle")
 }
 
+/** Open the chat as a separate pop-out window (where supported). */
 export function popup(): Promise<void> {
   return callMethod("popup")
 }
 
+/** Toggle the widget's visibility (shown ↔ hidden). */
 export function toggleVisibility(): Promise<void> {
   return callMethod("toggleVisibility")
 }
 
+/** End the current chat session without removing the script. */
 export function endChat(): Promise<void> {
   return callMethod("endChat")
 }
 
+/** (Re)connect the widget socket — pairs with `autoStart: false`. */
 export function start(options?: { showWidget?: boolean }): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((a) => a.start?.(options))
 }
 
+/** Add tags to the current conversation/visitor. */
 export function addTags(tags: string[], cb?: (err?: Error) => void): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((a) => a.addTags?.(tags, cb))
 }
 
+/** Remove tags from the current conversation/visitor. */
 export function removeTags(tags: string[], cb?: (err?: Error) => void): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((a) => a.removeTags?.(tags, cb))
 }
 
+/** Authenticated login — restores past conversations when supported. */
 export function login(
   user: { name?: string; email?: string; phone?: string; hash?: string; userId?: string },
   cb?: (err?: Error) => void,
@@ -387,6 +415,7 @@ export function login(
   return queue.enqueue((a) => a.login?.(user, cb))
 }
 
+/** Authenticated logout. */
 export function logout(cb?: (err?: Error) => void): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   store.reset()
@@ -399,34 +428,43 @@ function syncRead<T>(name: keyof TawkAPI): T | undefined {
   return fn?.()
 }
 
+/** Synchronous status getter — `online` / `away` / `offline`. */
 export function getStatus(): "online" | "away" | "offline" | undefined {
   return syncRead<"online" | "away" | "offline">("getStatus")
 }
 
+/** Synchronous window-type getter — `inline` / `embed`. */
 export function getWindowType(): "inline" | "embed" | undefined {
   return syncRead<"inline" | "embed">("getWindowType")
 }
 
+/** Synchronous getter — `true` when the chat window is maximized. */
 export function isChatMaximized(): boolean | undefined {
   return syncRead<boolean>("isChatMaximized")
 }
 
+/** Synchronous getter — `true` when the chat window is minimized. */
 export function isChatMinimized(): boolean | undefined {
   return syncRead<boolean>("isChatMinimized")
 }
 
+/** Synchronous getter — `true` when the widget is hidden. */
 export function isChatHidden(): boolean | undefined {
   return syncRead<boolean>("isChatHidden")
 }
 
+/** Synchronous getter — `true` when a conversation is in progress. */
 export function isChatOngoing(): boolean | undefined {
   return syncRead<boolean>("isChatOngoing")
 }
 
+/** Synchronous getter — `true` when the visitor has interacted with the widget. */
 export function isVisitorEngaged(): boolean | undefined {
   return syncRead<boolean>("isVisitorEngaged")
 }
 
+/** Subscribe to the provider's typed lifecycle/event stream. Returns
+ *  an unsubscribe function. */
 export function on(event: TawkEventName, listener: (payload?: unknown) => void): () => void {
   let set = eventListeners.get(event)
   if (!set) {
@@ -437,6 +475,8 @@ export function on(event: TawkEventName, listener: (payload?: unknown) => void):
   return () => set?.delete(listener)
 }
 
+/** Hard reset: remove the injected script, clear globals & listeners,
+ *  return to the idle lifecycle state. */
 export async function destroy(): Promise<void> {
   if (!isBrowser()) return
   await shutdown().catch(() => undefined)
@@ -454,18 +494,23 @@ export async function destroy(): Promise<void> {
   lifecycle.transition("idle")
 }
 
+/** Read the current visitor identity snapshot. */
 export function getIdentity(): IdentityState {
   return store.get()
 }
 
+/** Subscribe to identity transitions (anonymous ↔ identified). Returns an
+ *  unsubscribe function. */
 export function onIdentityChange(listener: IdentityListener): () => void {
   return store.onChange(listener)
 }
 
+/** Synchronous check — true once the widget is in the `ready` state. */
 export function isReady(): boolean {
   return lifecycle.state() === "ready"
 }
 
+/** Current lifecycle state: `idle` | `loading` | `ready` | `shutdown`. */
 export function state(): "idle" | "loading" | "ready" | "shutdown" {
   return lifecycle.state()
 }

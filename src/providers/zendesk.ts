@@ -70,8 +70,10 @@ const ZENDESK_EVENTS: readonly ZendeskEventName[] = [
 let readyPromise: Promise<void> | undefined
 let readyResolve: (() => void) | undefined
 
+/** Cookie consent / banner mode accepted by this provider. */
 export type ZendeskCookieMode = "all" | "functional" | "none"
 
+/** Visual customization overrides for this provider's widget. */
 export interface ZendeskCustomization {
   color?: { primary?: string; launcher?: string; launcherText?: string; messageBubble?: string }
   position?: { horizontal?: "left" | "right"; vertical?: "bottom" | "top" }
@@ -81,6 +83,7 @@ export interface ZendeskCustomization {
   [key: string]: unknown
 }
 
+/** Load-time options for this provider's `load()` call. */
 export interface ZendeskLoadOptions extends LoadOptions {
   key: string
   /** Cookie consent mode (defaults to vendor's `all`). */
@@ -91,6 +94,8 @@ export interface ZendeskLoadOptions extends LoadOptions {
   customization?: ZendeskCustomization
 }
 
+/** Inject the zendesk CDN script and boot the widget. Queues any
+ *  methods called before the real API attaches; resolves when ready. */
 export async function load(options: ZendeskLoadOptions): Promise<void> {
   if (!isBrowser()) return
   if (options.consent === false) return
@@ -141,10 +146,13 @@ export async function load(options: ZendeskLoadOptions): Promise<void> {
   readyResolve?.()
 }
 
+/** Promise that resolves once zendesk's API is live. */
 export function ready(): Promise<void> {
   return readyPromise ?? Promise.resolve()
 }
 
+/** Subscribe to zendesk's unread-count updates. Returns an unsubscribe
+ *  function. */
 export function onUnreadCountChange(listener: (count: number) => void): () => void {
   unreadListeners.add(listener)
   return () => unreadListeners.delete(listener)
@@ -152,11 +160,14 @@ export function onUnreadCountChange(listener: (count: number) => void): () => vo
 
 const loginErrorListeners = new Set<(err: unknown) => void>()
 
+/** Listener — fired when authenticated login fails. */
 export function onLoginError(listener: (err: unknown) => void): () => void {
   loginErrorListeners.add(listener)
   return () => loginErrorListeners.delete(listener)
 }
 
+/** Set the current visitor on zendesk. Supports anonymous → identified
+ *  transitions and provider-specific verification (HMAC/JWT/callback). */
 export function identify(identity: Identity): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   if (!identity.verification) {
@@ -195,6 +206,8 @@ export function identify(identity: Identity): Promise<void> {
   })
 }
 
+/** Notify zendesk of an SPA route change so its targeting & session
+ *  tracking stay accurate. */
 export function pageView(info?: { path?: string; locale?: string }): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((zE) => {
@@ -205,6 +218,8 @@ export function pageView(info?: { path?: string; locale?: string }): Promise<voi
   })
 }
 
+/** Emit a custom event to zendesk. `metadata` is typed as
+ *  `EventMetadata` (a JSON-serialisable record). */
 export function track<T extends EventMetadata = EventMetadata>(
   event: string,
   metadata?: T,
@@ -216,51 +231,61 @@ export function track<T extends EventMetadata = EventMetadata>(
   })
 }
 
+/** Set the conversation tags (Zendesk Messenger). */
 export function setConversationTags(tags: string[]): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((zE) => zE("messenger:set", "conversationTags", tags))
 }
 
+/** Switch the widget's locale at runtime. */
 export function setLocale(locale: string): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((zE) => zE("messenger:set", "locale", locale))
 }
 
+/** Switch the cookie consent mode at runtime. */
 export function setCookies(mode: ZendeskCookieMode): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((zE) => zE("messenger:set", "cookies", mode))
 }
 
+/** Update the widget z-index at runtime. */
 export function setZIndex(z: number): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((zE) => zE("messenger:set", "zIndex", z))
 }
 
+/** Apply customization overrides at runtime. */
 export function setCustomization(customization: ZendeskCustomization): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((zE) => zE("messenger:set", "customization", customization))
 }
 
+/** Show / open the zendesk widget. */
 export function show(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((zE) => zE("messenger", "show"))
 }
 
+/** Hide / close the zendesk widget. */
 export function hide(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((zE) => zE("messenger", "hide"))
 }
 
+/** Open / expand the chat panel. */
 export function open(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((zE) => zE("messenger", "open"))
 }
 
+/** Close / collapse the chat panel. */
 export function close(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((zE) => zE("messenger", "close"))
 }
 
+/** Open the UI to start a new conversation. */
 export function newConversation(options?: Record<string, unknown>): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((zE) =>
@@ -270,11 +295,14 @@ export function newConversation(options?: Record<string, unknown>): Promise<void
   )
 }
 
+/** Reset the entire widget state (clears user, conversations, fields). */
 export function resetWidget(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((zE) => zE("messenger", "resetWidget"))
 }
 
+/** Subscribe to the provider's typed lifecycle/event stream. Returns
+ *  an unsubscribe function. */
 export function on(event: ZendeskEventName, listener: (payload?: unknown) => void): () => void {
   let set = eventListeners.get(event)
   if (!set) {
@@ -285,6 +313,8 @@ export function on(event: ZendeskEventName, listener: (payload?: unknown) => voi
   return () => set?.delete(listener)
 }
 
+/** End the zendesk session without removing the CDN script. The
+ *  provider can be re-identified with `identify()` afterwards. */
 export function shutdown(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue
@@ -297,6 +327,8 @@ export function shutdown(): Promise<void> {
     })
 }
 
+/** Hard reset: remove the injected script, clear globals & listeners,
+ *  return to the idle lifecycle state. */
 export async function destroy(): Promise<void> {
   if (!isBrowser()) return
   await shutdown().catch(() => undefined)
@@ -315,18 +347,23 @@ export async function destroy(): Promise<void> {
   lifecycle.transition("idle")
 }
 
+/** Read the current visitor identity snapshot. */
 export function getIdentity(): IdentityState {
   return store.get()
 }
 
+/** Subscribe to identity transitions (anonymous ↔ identified). Returns an
+ *  unsubscribe function. */
 export function onIdentityChange(listener: IdentityListener): () => void {
   return store.onChange(listener)
 }
 
+/** Synchronous check — true once the widget is in the `ready` state. */
 export function isReady(): boolean {
   return lifecycle.state() === "ready"
 }
 
+/** Current lifecycle state: `idle` | `loading` | `ready` | `shutdown`. */
 export function state(): "idle" | "loading" | "ready" | "shutdown" {
   return lifecycle.state()
 }

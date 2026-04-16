@@ -1,5 +1,7 @@
+/** A queued operation receives the real API once it becomes available. */
 export type QueueOp<T> = (api: T) => void
 
+/** Buffered call queue — drains in FIFO order once `ready()` is called. */
 export interface Queue<T> {
   enqueue(op: QueueOp<T>): Promise<void>
   ready(api: T): void
@@ -7,6 +9,8 @@ export interface Queue<T> {
   isReady(): boolean
 }
 
+/** Build a fresh queue. Each provider keeps its own instance to buffer
+ *  pre-boot calls until the real SDK attaches. */
 export function createQueue<T>(): Queue<T> {
   const ops: Array<{ op: QueueOp<T>; resolve: () => void; reject: (e: unknown) => void }> = []
   let api: T | undefined

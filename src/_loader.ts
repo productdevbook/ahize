@@ -1,5 +1,6 @@
 import { ScriptLoadError } from "./errors.ts"
 
+/** Options for `injectScript()`. */
 export interface InjectOptions {
   src: string
   id?: string
@@ -12,10 +13,15 @@ export interface InjectOptions {
 
 const pending = new Map<string, Promise<void>>()
 
+/** `true` when called in a browser-like environment with `window` and
+ *  `document` defined. Use to gate code paths that touch the DOM. */
 export function isBrowser(): boolean {
   return typeof window !== "undefined" && typeof document !== "undefined"
 }
 
+/** Inject a `<script>` into the document. De-duplicates by `id` so the
+ *  same script isn't loaded twice. Resolves on the script's `load`
+ *  event, rejects with `ScriptLoadError` on `error`. */
 export function injectScript(opts: InjectOptions): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
 
@@ -53,6 +59,7 @@ export function injectScript(opts: InjectOptions): Promise<void> {
   return promise
 }
 
+/** Remove a previously injected script tag by id. */
 export function removeScript(id: string): void {
   if (!isBrowser()) return
   pending.delete(id)
@@ -60,6 +67,8 @@ export function removeScript(id: string): void {
   el?.remove()
 }
 
+/** Read the CSP nonce from the current document, if one is set on the
+ *  current `<script>` tag (Next.js / Nuxt set this automatically). */
 export function readCspNonce(): string | undefined {
   if (!isBrowser()) return undefined
   const current = document.currentScript

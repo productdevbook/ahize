@@ -58,10 +58,13 @@ function unwrap<T>(r: UserlikeResult<T>): T {
   return r.value
 }
 
+/** Load-time options for this provider's `load()` call. */
 export interface UserlikeLoadOptions extends LoadOptions {
   messengerId: string
 }
 
+/** Inject the userlike CDN script and boot the widget. Queues any
+ *  methods called before the real API attaches; resolves when ready. */
 export async function load(options: UserlikeLoadOptions): Promise<void> {
   if (!isBrowser()) return
   if (options.consent === false) return
@@ -106,11 +109,14 @@ export async function load(options: UserlikeLoadOptions): Promise<void> {
   lifecycle.transition("ready")
 }
 
+/** Promise that resolves once userlike's API is live. */
 export function ready(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue(() => {})
 }
 
+/** Set the current visitor on userlike. Supports anonymous → identified
+ *  transitions and provider-specific verification (HMAC/JWT/callback). */
 export function identify(identity: Identity): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   store.identify(identity)
@@ -126,6 +132,8 @@ export function identify(identity: Identity): Promise<void> {
   })
 }
 
+/** Emit a custom event to userlike. `metadata` is typed as
+ *  `EventMetadata` (a JSON-serialisable record). */
 export function track<T extends EventMetadata = EventMetadata>(
   event: string,
   metadata?: T,
@@ -136,10 +144,13 @@ export function track<T extends EventMetadata = EventMetadata>(
   })
 }
 
+/** Notify userlike of an SPA route change so its targeting & session
+ *  tracking stay accurate. */
 export function pageView(_info?: { path?: string; locale?: string }): Promise<void> {
   return Promise.resolve()
 }
 
+/** Switch the widget's locale at runtime. */
 export function setLocale(locale: string): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue(async (m) => {
@@ -147,6 +158,7 @@ export function setLocale(locale: string): Promise<void> {
   })
 }
 
+/** Show / open the userlike widget. */
 export function show(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue(async (m) => {
@@ -155,6 +167,7 @@ export function show(): Promise<void> {
   })
 }
 
+/** Hide / close the userlike widget. */
 export function hide(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue(async (m) => {
@@ -162,6 +175,8 @@ export function hide(): Promise<void> {
   })
 }
 
+/** End the userlike session without removing the CDN script. The
+ *  provider can be re-identified with `identify()` afterwards. */
 export function shutdown(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue
@@ -174,6 +189,8 @@ export function shutdown(): Promise<void> {
     })
 }
 
+/** Hard reset: remove the injected script, clear globals & listeners,
+ *  return to the idle lifecycle state. */
 export async function destroy(): Promise<void> {
   if (!isBrowser()) return
   await shutdown().catch(() => undefined)
@@ -186,18 +203,23 @@ export async function destroy(): Promise<void> {
   lifecycle.transition("idle")
 }
 
+/** Read the current visitor identity snapshot. */
 export function getIdentity(): IdentityState {
   return store.get()
 }
 
+/** Subscribe to identity transitions (anonymous ↔ identified). Returns an
+ *  unsubscribe function. */
 export function onIdentityChange(listener: IdentityListener): () => void {
   return store.onChange(listener)
 }
 
+/** Synchronous check — true once the widget is in the `ready` state. */
 export function isReady(): boolean {
   return lifecycle.state() === "ready"
 }
 
+/** Current lifecycle state: `idle` | `loading` | `ready` | `shutdown`. */
 export function state(): "idle" | "loading" | "ready" | "shutdown" {
   return lifecycle.state()
 }

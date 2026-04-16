@@ -64,6 +64,7 @@ let readyResolve: (() => void) | undefined
 let unreadBound = false
 let lifecycleEventsBound = false
 
+/** Region keys this provider's vendor supports. */
 export type IntercomRegion = "us" | "eu" | "au"
 
 const TYPED_BOOT_KEYS = [
@@ -80,6 +81,7 @@ const TYPED_BOOT_KEYS = [
   "theme_mode",
 ] as const
 
+/** Load-time options for this provider's `load()` call. */
 export interface IntercomLoadOptions extends LoadOptions {
   appId: string
   region?: IntercomRegion
@@ -115,6 +117,8 @@ function apiBaseFor(region?: IntercomRegion): string | undefined {
   return undefined
 }
 
+/** Inject the intercom CDN script and boot the widget. Queues any
+ *  methods called before the real API attaches; resolves when ready. */
 export async function load(options: IntercomLoadOptions): Promise<void> {
   if (!isBrowser()) return
   if (options.consent === false) return
@@ -188,30 +192,37 @@ export async function load(options: IntercomLoadOptions): Promise<void> {
   readyResolve?.()
 }
 
+/** Promise that resolves once intercom's API is live. */
 export function ready(): Promise<void> {
   return readyPromise ?? Promise.resolve()
 }
 
+/** Subscribe to intercom's unread-count updates. Returns an unsubscribe
+ *  function. */
 export function onUnreadCountChange(listener: (count: number) => void): () => void {
   unreadListeners.add(listener)
   return () => unreadListeners.delete(listener)
 }
 
+/** Listener — fired when the widget becomes visible. */
 export function onShow(listener: () => void): () => void {
   showListeners.add(listener)
   return () => showListeners.delete(listener)
 }
 
+/** Listener — fired when the widget becomes hidden. */
 export function onHide(listener: () => void): () => void {
   hideListeners.add(listener)
   return () => hideListeners.delete(listener)
 }
 
+/** Listener — fired when the visitor supplies their email. */
 export function onUserEmailSupplied(listener: (email: string) => void): () => void {
   emailSuppliedListeners.add(listener)
   return () => emailSuppliedListeners.delete(listener)
 }
 
+/** Restart the widget without losing the current conversation. */
 export async function softReboot(): Promise<void> {
   if (!isBrowser() || !currentOptions) return
   const opts = currentOptions
@@ -219,6 +230,8 @@ export async function softReboot(): Promise<void> {
   await load(opts)
 }
 
+/** Set the current visitor on intercom. Supports anonymous → identified
+ *  transitions and provider-specific verification (HMAC/JWT/callback). */
 export function identify(identity: Identity): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   if (
@@ -247,6 +260,8 @@ export function identify(identity: Identity): Promise<void> {
   })
 }
 
+/** Notify intercom of an SPA route change so its targeting & session
+ *  tracking stay accurate. */
 export function pageView(info?: { path?: string; locale?: string }): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((Intercom) => {
@@ -258,6 +273,8 @@ export function pageView(info?: { path?: string; locale?: string }): Promise<voi
   })
 }
 
+/** Emit a custom event to intercom. `metadata` is typed as
+ *  `EventMetadata` (a JSON-serialisable record). */
 export function track<T extends EventMetadata = EventMetadata>(
   event: string,
   metadata?: T,
@@ -268,6 +285,7 @@ export function track<T extends EventMetadata = EventMetadata>(
   })
 }
 
+/** Show / open the intercom widget. */
 export function show(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((Intercom) => {
@@ -275,6 +293,7 @@ export function show(): Promise<void> {
   })
 }
 
+/** Hide / close the intercom widget. */
 export function hide(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((Intercom) => {
@@ -282,6 +301,7 @@ export function hide(): Promise<void> {
   })
 }
 
+/** Messenger space names recognised by this provider. */
 export type IntercomSpace = "home" | "messages" | "help" | "news" | "tasks" | "tickets"
 
 function call(command: string, ...args: unknown[]): Promise<void> {
@@ -289,56 +309,69 @@ function call(command: string, ...args: unknown[]): Promise<void> {
   return queue.enqueue((Intercom) => Intercom(command, ...args))
 }
 
+/** Navigate the messenger to a specific space (home/messages/help/...). */
 export function showSpace(space: IntercomSpace): Promise<void> {
   return call("showSpace", space)
 }
 
+/** Navigate to the messages tab. */
 export function showMessages(): Promise<void> {
   return call("showMessages")
 }
 
+/** Open the composer for a new message, optionally pre-filled. */
 export function showNewMessage(prefilledContent?: string): Promise<void> {
   return prefilledContent === undefined
     ? call("showNewMessage")
     : call("showNewMessage", prefilledContent)
 }
 
+/** Open a specific conversation by id. */
 export function showConversation(conversationId: string): Promise<void> {
   return call("showConversation", conversationId)
 }
 
+/** Open a specific ticket by id. */
 export function showTicket(ticketId: string): Promise<void> {
   return call("showTicket", ticketId)
 }
 
+/** Open a specific help-center article by id. */
 export function showArticle(articleId: string): Promise<void> {
   return call("showArticle", articleId)
 }
 
+/** Open a specific news item by id. */
 export function showNews(newsItemId: string): Promise<void> {
   return call("showNews", newsItemId)
 }
 
+/** Start a product tour by id. */
 export function startTour(tourId: string): Promise<void> {
   return call("startTour", tourId)
 }
 
+/** Start a survey by id. */
 export function startSurvey(surveyId: string): Promise<void> {
   return call("startSurvey", surveyId)
 }
 
+/** Start a checklist by id. */
 export function startChecklist(checklistId: string): Promise<void> {
   return call("startChecklist", checklistId)
 }
 
+/** Programmatically start a conversation, optionally with a message. */
 export function startConversation(message: string): Promise<void> {
   return call("startConversation", message)
 }
 
+/** Hide / unhide the in-app notifications. */
 export function hideNotifications(hidden: boolean): Promise<void> {
   return call("hideNotifications", hidden)
 }
 
+/** Read the provider's anonymous visitor id. */
 export function getVisitorId(): Promise<string | undefined> {
   if (!isBrowser()) return Promise.resolve(undefined)
   return new Promise((resolve) => {
@@ -351,6 +384,8 @@ export function getVisitorId(): Promise<string | undefined> {
   })
 }
 
+/** End the intercom session without removing the CDN script. The
+ *  provider can be re-identified with `identify()` afterwards. */
 export function shutdown(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   const prev = lifecycle.state()
@@ -369,6 +404,8 @@ export function shutdown(): Promise<void> {
     })
 }
 
+/** Hard reset: remove the injected script, clear globals & listeners,
+ *  return to the idle lifecycle state. */
 export async function destroy(): Promise<void> {
   if (!isBrowser()) return
   await shutdown().catch(() => undefined)
@@ -392,18 +429,23 @@ export async function destroy(): Promise<void> {
   lifecycle.transition("idle")
 }
 
+/** Read the current visitor identity snapshot. */
 export function getIdentity(): IdentityState {
   return store.get()
 }
 
+/** Subscribe to identity transitions (anonymous ↔ identified). Returns an
+ *  unsubscribe function. */
 export function onIdentityChange(listener: IdentityListener): () => void {
   return store.onChange(listener)
 }
 
+/** Synchronous check — true once the widget is in the `ready` state. */
 export function isReady(): boolean {
   return lifecycle.state() === "ready"
 }
 
+/** Current lifecycle state: `idle` | `loading` | `ready` | `shutdown`. */
 export function state(): "idle" | "loading" | "ready" | "shutdown" {
   return lifecycle.state()
 }

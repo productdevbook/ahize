@@ -49,11 +49,14 @@ let readyPromise: Promise<void> | undefined
 let readyResolve: (() => void) | undefined
 let sunsetWarned = false
 
+/** Load-time options for this provider's `load()` call. */
 export interface DriftLoadOptions extends LoadOptions {
   embedId: string
   version?: string
 }
 
+/** Inject the drift CDN script and boot the widget. Queues any
+ *  methods called before the real API attaches; resolves when ready. */
 export async function load(options: DriftLoadOptions): Promise<void> {
   if (!isBrowser()) return
   if (options.consent === false) return
@@ -102,10 +105,13 @@ export async function load(options: DriftLoadOptions): Promise<void> {
   lifecycle.transition("ready")
 }
 
+/** Promise that resolves once drift's API is live. */
 export function ready(): Promise<void> {
   return readyPromise ?? Promise.resolve()
 }
 
+/** Set the current visitor on drift. Supports anonymous → identified
+ *  transitions and provider-specific verification (HMAC/JWT/callback). */
 export function identify(identity: Identity): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   if (!identity.id) return Promise.resolve()
@@ -125,6 +131,8 @@ export function identify(identity: Identity): Promise<void> {
   })
 }
 
+/** Emit a custom event to drift. `metadata` is typed as
+ *  `EventMetadata` (a JSON-serialisable record). */
 export function track<T extends EventMetadata = EventMetadata>(
   event: string,
   metadata?: T,
@@ -133,26 +141,33 @@ export function track<T extends EventMetadata = EventMetadata>(
   return queue.enqueue((drift) => drift.track(event, metadata))
 }
 
+/** Notify drift of an SPA route change so its targeting & session
+ *  tracking stay accurate. */
 export function pageView(_info?: { path?: string; locale?: string }): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((drift) => drift.track("pageView"))
 }
 
+/** Show / open the drift widget. */
 export function show(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((drift) => drift.show())
 }
 
+/** Hide / close the drift widget. */
 export function hide(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((drift) => drift.hide())
 }
 
+/** Open the chat panel directly (Drift-specific deep link). */
 export function openChat(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((drift) => drift.api?.openChat())
 }
 
+/** End the drift session without removing the CDN script. The
+ *  provider can be re-identified with `identify()` afterwards. */
 export function shutdown(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue
@@ -163,6 +178,8 @@ export function shutdown(): Promise<void> {
     })
 }
 
+/** Hard reset: remove the injected script, clear globals & listeners,
+ *  return to the idle lifecycle state. */
 export async function destroy(): Promise<void> {
   if (!isBrowser()) return
   await shutdown().catch(() => undefined)
@@ -178,18 +195,23 @@ export async function destroy(): Promise<void> {
   lifecycle.transition("idle")
 }
 
+/** Read the current visitor identity snapshot. */
 export function getIdentity(): IdentityState {
   return store.get()
 }
 
+/** Subscribe to identity transitions (anonymous ↔ identified). Returns an
+ *  unsubscribe function. */
 export function onIdentityChange(listener: IdentityListener): () => void {
   return store.onChange(listener)
 }
 
+/** Synchronous check — true once the widget is in the `ready` state. */
 export function isReady(): boolean {
   return lifecycle.state() === "ready"
 }
 
+/** Current lifecycle state: `idle` | `loading` | `ready` | `shutdown`. */
 export function state(): "idle" | "loading" | "ready" | "shutdown" {
   return lifecycle.state()
 }

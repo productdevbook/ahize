@@ -89,9 +89,12 @@ const TYPED_SETTINGS_KEYS = [
   "loadImmediately",
 ] as const
 
+/** Region keys this provider's vendor supports. */
 export type HubSpotRegion = "na1" | "eu1" | "ap1"
+/** Cookie consent / banner mode accepted by this provider. */
 export type HubSpotCookieBanner = boolean | "ON_WIDGET_LOAD" | "ON_EXIT_INTENT"
 
+/** Load-time options for this provider's `load()` call. */
 export interface HubSpotLoadOptions extends LoadOptions {
   portalId: string
   region?: HubSpotRegion
@@ -135,6 +138,8 @@ function validateTrackKeys(metadata: Record<string, unknown> | undefined): void 
   }
 }
 
+/** Inject the hubspot CDN script and boot the widget. Queues any
+ *  methods called before the real API attaches; resolves when ready. */
 export async function load(options: HubSpotLoadOptions): Promise<void> {
   if (!isBrowser()) return
   if (options.consent === false) return
@@ -197,6 +202,8 @@ export async function load(options: HubSpotLoadOptions): Promise<void> {
   lifecycle.transition("ready")
 }
 
+/** Set the current visitor on hubspot. Supports anonymous → identified
+ *  transitions and provider-specific verification (HMAC/JWT/callback). */
 export function identify(identity: Identity): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   if (identity.verification && identity.verification.kind !== "jwt") {
@@ -229,6 +236,8 @@ export function identify(identity: Identity): Promise<void> {
   return Promise.resolve()
 }
 
+/** Notify hubspot of an SPA route change so its targeting & session
+ *  tracking stay accurate. */
 export function pageView(info?: { path?: string }): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   const path = info?.path ?? (isBrowser() ? location.pathname + location.search : undefined)
@@ -239,6 +248,8 @@ export function pageView(info?: { path?: string }): Promise<void> {
   })
 }
 
+/** Emit a custom event to hubspot. `metadata` is typed as
+ *  `EventMetadata` (a JSON-serialisable record). */
 export function track<T extends EventMetadata = EventMetadata>(
   event: string,
   metadata?: T,
@@ -249,6 +260,7 @@ export function track<T extends EventMetadata = EventMetadata>(
   return Promise.resolve()
 }
 
+/** Refresh the widget — useful after pageView() in HubSpot. */
 export function refresh(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return conversations.enqueue((api) => {
@@ -256,6 +268,7 @@ export function refresh(): Promise<void> {
   })
 }
 
+/** Show / open the hubspot widget. */
 export function show(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return conversations.enqueue((api) => {
@@ -264,6 +277,7 @@ export function show(): Promise<void> {
   })
 }
 
+/** Hide / close the hubspot widget. */
 export function hide(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return conversations.enqueue((api) => {
@@ -271,6 +285,8 @@ export function hide(): Promise<void> {
   })
 }
 
+/** End the hubspot session without removing the CDN script. The
+ *  provider can be re-identified with `identify()` afterwards. */
 export function shutdown(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return conversations
@@ -284,15 +300,20 @@ export function shutdown(): Promise<void> {
     })
 }
 
+/** Promise that resolves once hubspot's API is live. */
 export function ready(): Promise<void> {
   return readyPromise ?? Promise.resolve()
 }
 
+/** Subscribe to hubspot's unread-count updates. Returns an unsubscribe
+ *  function. */
 export function onUnreadCountChange(listener: (count: number) => void): () => void {
   unreadListeners.add(listener)
   return () => unreadListeners.delete(listener)
 }
 
+/** Subscribe to the provider's typed lifecycle/event stream. Returns
+ *  an unsubscribe function. */
 export function on(event: HubSpotEventName, listener: (payload: unknown) => void): () => void {
   let set = eventListeners.get(event)
   if (!set) {
@@ -303,11 +324,14 @@ export function on(event: HubSpotEventName, listener: (payload: unknown) => void
   return () => set?.delete(listener)
 }
 
+/** Synchronous status getter — `{ loaded, pending }`. */
 export function status(): { loaded: boolean; pending: boolean } | undefined {
   if (!isBrowser()) return undefined
   return w().HubSpotConversations?.widget.status?.()
 }
 
+/** Hard reset: remove the injected script, clear globals & listeners,
+ *  return to the idle lifecycle state. */
 export async function destroy(): Promise<void> {
   if (!isBrowser()) return
   await shutdown().catch(() => undefined)
@@ -327,18 +351,23 @@ export async function destroy(): Promise<void> {
   lifecycle.transition("idle")
 }
 
+/** Read the current visitor identity snapshot. */
 export function getIdentity(): IdentityState {
   return store.get()
 }
 
+/** Subscribe to identity transitions (anonymous ↔ identified). Returns an
+ *  unsubscribe function. */
 export function onIdentityChange(listener: IdentityListener): () => void {
   return store.onChange(listener)
 }
 
+/** Synchronous check — true once the widget is in the `ready` state. */
 export function isReady(): boolean {
   return lifecycle.state() === "ready"
 }
 
+/** Current lifecycle state: `idle` | `loading` | `ready` | `shutdown`. */
 export function state(): "idle" | "loading" | "ready" | "shutdown" {
   return lifecycle.state()
 }

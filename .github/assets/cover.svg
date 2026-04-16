@@ -1,232 +1,233 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 628" width="1200" height="628">
   <defs>
-    <filter id="grain">
-      <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/>
-      <feColorMatrix type="saturate" values="0"/>
-      <feBlend in="SourceGraphic" mode="overlay" result="blend"/>
-      <feComponentTransfer>
-        <feFuncA type="linear" slope="0.06"/>
-      </feComponentTransfer>
-      <feBlend in="SourceGraphic" mode="normal"/>
+    <!-- Warm cream paper background with subtle noise -->
+    <filter id="paper">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7"/>
+      <feColorMatrix values="0 0 0 0 0.82  0 0 0 0 0.74  0 0 0 0 0.62  0 0 0 0.08 0"/>
+      <feComposite in2="SourceGraphic" operator="in"/>
     </filter>
 
-    <filter id="glow-orange" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="12" result="blur"/>
-      <feFlood flood-color="#f97316" flood-opacity="0.5"/>
-      <feComposite in2="blur" operator="in"/>
-      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    <!-- Soft drop shadow -->
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="6"/>
+      <feOffset dx="0" dy="4" result="off"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.18"/></feComponentTransfer>
+      <feComposite in2="off" operator="in" result="shadow"/>
+      <feMerge><feMergeNode in="shadow"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
 
-    <filter id="glow-cyan" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="10" result="blur"/>
-      <feFlood flood-color="#06b6d4" flood-opacity="0.45"/>
-      <feComposite in2="blur" operator="in"/>
-      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
+    <!-- Gradient for main wordmark -->
+    <linearGradient id="wordmarkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1b3a2f"/>
+      <stop offset="100%" stop-color="#2d5a48"/>
+    </linearGradient>
 
-    <filter id="glow-purple" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="10" result="blur"/>
-      <feFlood flood-color="#a78bfa" flood-opacity="0.4"/>
-      <feComposite in2="blur" operator="in"/>
-      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
+    <!-- Accent coral → tangerine -->
+    <linearGradient id="coral" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ff8a65"/>
+      <stop offset="100%" stop-color="#ff5a36"/>
+    </linearGradient>
 
-    <filter id="glow-emerald" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="8" result="blur"/>
-      <feFlood flood-color="#34d399" flood-opacity="0.35"/>
-      <feComposite in2="blur" operator="in"/>
-      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
+    <!-- Mint -->
+    <linearGradient id="mint" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#83e0bd"/>
+      <stop offset="100%" stop-color="#42b883"/>
+    </linearGradient>
 
-    <filter id="glow-rose" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="8" result="blur"/>
-      <feFlood flood-color="#fb7185" flood-opacity="0.35"/>
-      <feComposite in2="blur" operator="in"/>
-      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
+    <!-- Periwinkle -->
+    <linearGradient id="periwinkle" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#a5a8ff"/>
+      <stop offset="100%" stop-color="#7073e8"/>
+    </linearGradient>
 
-    <filter id="glow-amber" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="6" result="blur"/>
-      <feFlood flood-color="#fbbf24" flood-opacity="0.35"/>
-      <feComposite in2="blur" operator="in"/>
-      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-
-    <radialGradient id="ambientOrange" cx="0.05" cy="0.25" r="0.35">
-      <stop offset="0%" stop-color="#f97316" stop-opacity="0.08"/>
-      <stop offset="100%" stop-color="#f97316" stop-opacity="0"/>
-    </radialGradient>
-    <radialGradient id="ambientCyan" cx="0.95" cy="0.15" r="0.35">
-      <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.07"/>
-      <stop offset="100%" stop-color="#06b6d4" stop-opacity="0"/>
-    </radialGradient>
-    <radialGradient id="ambientPurple" cx="0.05" cy="0.85" r="0.35">
-      <stop offset="0%" stop-color="#a78bfa" stop-opacity="0.06"/>
-      <stop offset="100%" stop-color="#a78bfa" stop-opacity="0"/>
-    </radialGradient>
-    <radialGradient id="ambientEmerald" cx="0.95" cy="0.85" r="0.35">
-      <stop offset="0%" stop-color="#34d399" stop-opacity="0.05"/>
-      <stop offset="100%" stop-color="#34d399" stop-opacity="0"/>
-    </radialGradient>
-
-    <radialGradient id="centerBackdrop" cx="0.5" cy="0.5" r="0.55">
-      <stop offset="0%" stop-color="#06070b" stop-opacity="0.95"/>
-      <stop offset="55%" stop-color="#06070b" stop-opacity="0.88"/>
-      <stop offset="80%" stop-color="#06070b" stop-opacity="0.4"/>
-      <stop offset="100%" stop-color="#06070b" stop-opacity="0"/>
-    </radialGradient>
-
-    <pattern id="dotGrid" width="28" height="28" patternUnits="userSpaceOnUse">
-      <circle cx="14" cy="14" r="0.6" fill="#334155" opacity="0.35"/>
-    </pattern>
-
-    <radialGradient id="vignetteGrad" cx="0.5" cy="0.5" r="0.7">
-      <stop offset="0%" stop-color="transparent"/>
-      <stop offset="100%" stop-color="#06070b"/>
-    </radialGradient>
+    <!-- Butter -->
+    <linearGradient id="butter" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffe38a"/>
+      <stop offset="100%" stop-color="#ffb84d"/>
+    </linearGradient>
   </defs>
 
-  <!-- Background -->
-  <rect width="1200" height="628" fill="#06070b"/>
-  <rect width="1200" height="628" fill="url(#ambientOrange)"/>
-  <rect width="1200" height="628" fill="url(#ambientCyan)"/>
-  <rect width="1200" height="628" fill="url(#ambientPurple)"/>
-  <rect width="1200" height="628" fill="url(#ambientEmerald)"/>
-  <rect width="1200" height="628" fill="url(#dotGrid)" opacity="0.4"/>
+  <!-- ════════════════════════════════════════ -->
+  <!-- CREAM PAPER BACKGROUND                    -->
+  <!-- ════════════════════════════════════════ -->
+  <rect width="1200" height="628" fill="#fbf6ed"/>
+  <rect width="1200" height="628" filter="url(#paper)"/>
 
-  <!-- ══════════════════════════════════════════ -->
-  <!-- Chat bubble (operator) — top left          -->
-  <!-- ══════════════════════════════════════════ -->
-  <g transform="translate(60, 80) rotate(-8, 120, 80)" filter="url(#glow-orange)" opacity="0.85">
-    <path d="M10,16 Q10,4 22,4 L198,4 Q210,4 210,16 L210,108 Q210,120 198,120 L70,120 L44,148 L48,120 L22,120 Q10,120 10,108 Z"
-          fill="none" stroke="#f97316" stroke-width="3"/>
-    <!-- typing dots -->
-    <circle cx="70" cy="62" r="7" fill="#f97316"/>
-    <circle cx="110" cy="62" r="7" fill="#f97316" opacity="0.75"/>
-    <circle cx="150" cy="62" r="7" fill="#f97316" opacity="0.5"/>
-    <text x="110" y="170" text-anchor="middle" fill="#f97316" opacity="0.6" font-family="'SF Mono','Fira Code',monospace" font-size="13" font-weight="bold" letter-spacing="5">OPERATOR</text>
+  <!-- Subtle diagonal stripes for texture (top right and bottom left) -->
+  <g opacity="0.06" fill="#1b3a2f">
+    <rect x="-100" y="-100" width="2" height="900" transform="rotate(20 600 314)"/>
+    <rect x="-40" y="-100" width="2" height="900" transform="rotate(20 600 314)"/>
+    <rect x="20" y="-100" width="2" height="900" transform="rotate(20 600 314)"/>
+    <rect x="80" y="-100" width="2" height="900" transform="rotate(20 600 314)"/>
+    <rect x="140" y="-100" width="2" height="900" transform="rotate(20 600 314)"/>
+    <rect x="200" y="-100" width="2" height="900" transform="rotate(20 600 314)"/>
   </g>
 
-  <!-- ══════════════════════════════════════════ -->
-  <!-- Handset (ahize) — top right                -->
-  <!-- ══════════════════════════════════════════ -->
-  <g transform="translate(960, 60) rotate(22, 100, 100)" filter="url(#glow-cyan)" opacity="0.78">
-    <!-- Handset shape: two rounded ear/mouth pieces joined by arc -->
-    <g fill="none" stroke="#06b6d4" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M20,40 Q20,10 50,10 L80,10 Q110,10 110,40 L110,70 Q110,100 80,100 L70,100 L70,130"/>
-      <path d="M190,40 Q190,10 160,10 L130,10 Q100,10 100,40 L100,70 Q100,100 130,100 L140,100 L140,130"/>
-      <!-- cord -->
-      <path d="M70,130 Q105,170 140,130" />
-      <!-- signal waves -->
-      <path d="M25,175 Q55,205 85,175" opacity="0.7"/>
-      <path d="M10,190 Q55,240 100,190" opacity="0.45"/>
+  <!-- ════════════════════════════════════════ -->
+  <!-- CHAT BUBBLE CLUSTER — LEFT               -->
+  <!-- ════════════════════════════════════════ -->
+
+  <!-- Visitor bubble 1 (coral) -->
+  <g transform="translate(80, 140) rotate(-4)" filter="url(#softShadow)">
+    <path d="M0,22 Q0,0 22,0 L208,0 Q230,0 230,22 L230,92 Q230,114 208,114 L58,114 L30,140 L42,114 L22,114 Q0,114 0,92 Z"
+          fill="url(#coral)"/>
+    <rect x="26" y="36" width="140" height="8" rx="4" fill="#fff" opacity="0.9"/>
+    <rect x="26" y="56" width="180" height="8" rx="4" fill="#fff" opacity="0.7"/>
+    <rect x="26" y="76" width="90" height="8" rx="4" fill="#fff" opacity="0.5"/>
+  </g>
+
+  <!-- Visitor bubble 2 (butter) - smaller, under -->
+  <g transform="translate(48, 300) rotate(6)" filter="url(#softShadow)">
+    <path d="M0,16 Q0,0 16,0 L150,0 Q166,0 166,16 L166,68 Q166,84 150,84 L40,84 L20,104 L28,84 L16,84 Q0,84 0,68 Z"
+          fill="url(#butter)"/>
+    <rect x="18" y="28" width="100" height="6" rx="3" fill="#5a3a00" opacity="0.55"/>
+    <rect x="18" y="44" width="130" height="6" rx="3" fill="#5a3a00" opacity="0.4"/>
+    <rect x="18" y="60" width="70" height="6" rx="3" fill="#5a3a00" opacity="0.3"/>
+  </g>
+
+  <!-- Operator bubble (mint) - bottom left -->
+  <g transform="translate(110, 440) rotate(-3)" filter="url(#softShadow)">
+    <path d="M0,20 Q0,0 20,0 L180,0 Q200,0 200,20 L200,80 Q200,100 180,100 L158,100 L172,124 L138,100 L20,100 Q0,100 0,80 Z"
+          fill="url(#mint)"/>
+    <!-- Three animated-looking typing dots -->
+    <circle cx="54" cy="50" r="8" fill="#fff"/>
+    <circle cx="90" cy="50" r="8" fill="#fff" opacity="0.75"/>
+    <circle cx="126" cy="50" r="8" fill="#fff" opacity="0.5"/>
+  </g>
+
+  <!-- ════════════════════════════════════════ -->
+  <!-- HANDSET ICON — TOP RIGHT                 -->
+  <!-- Clean geometric, mint on coral backdrop  -->
+  <!-- ════════════════════════════════════════ -->
+  <g transform="translate(920, 70)">
+    <!-- Circle backdrop -->
+    <circle cx="120" cy="120" r="115" fill="#ff8a65" opacity="0.18"/>
+    <circle cx="120" cy="120" r="92" fill="#ff8a65" opacity="0.28"/>
+
+    <!-- Handset shape -->
+    <g transform="translate(40, 40) rotate(-35, 80, 80)" filter="url(#softShadow)">
+      <!-- Ear piece -->
+      <rect x="0" y="0" width="60" height="45" rx="22" fill="url(#mint)"/>
+      <!-- Mouth piece -->
+      <rect x="100" y="115" width="60" height="45" rx="22" fill="url(#mint)"/>
+      <!-- Bar connecting them (curved) -->
+      <path d="M30,22 Q10,80 60,142" stroke="url(#mint)" stroke-width="14" fill="none" stroke-linecap="round"/>
+      <path d="M130,138 Q150,80 100,18" stroke="url(#mint)" stroke-width="14" fill="none" stroke-linecap="round"/>
     </g>
-    <text x="105" y="266" text-anchor="middle" fill="#06b6d4" opacity="0.55" font-family="'SF Mono','Fira Code',monospace" font-size="13" font-weight="bold" letter-spacing="5">AHIZE</text>
-  </g>
 
-  <!-- ══════════════════════════════════════════ -->
-  <!-- Chat bubble (visitor) — bottom left        -->
-  <!-- ══════════════════════════════════════════ -->
-  <g transform="translate(30, 420) rotate(5, 120, 80)" filter="url(#glow-purple)" opacity="0.72">
-    <path d="M10,16 Q10,4 22,4 L198,4 Q210,4 210,16 L210,108 Q210,120 198,120 L150,120 L176,148 L130,120 L22,120 Q10,120 10,108 Z"
-          fill="#a78bfa10" stroke="#a78bfa" stroke-width="3"/>
-    <!-- bars representing message lines -->
-    <rect x="30" y="36" width="140" height="8" rx="4" fill="#a78bfa" opacity="0.75"/>
-    <rect x="30" y="56" width="100" height="8" rx="4" fill="#a78bfa" opacity="0.55"/>
-    <rect x="30" y="76" width="120" height="8" rx="4" fill="#a78bfa" opacity="0.4"/>
-    <text x="110" y="188" text-anchor="middle" fill="#a78bfa" opacity="0.5" font-family="'SF Mono','Fira Code',monospace" font-size="13" font-weight="bold" letter-spacing="4">VISITOR</text>
-  </g>
-
-  <!-- ══════════════════════════════════════════ -->
-  <!-- Support headset — bottom right             -->
-  <!-- ══════════════════════════════════════════ -->
-  <g transform="translate(940, 420) rotate(-10, 130, 100)" filter="url(#glow-emerald)" opacity="0.7">
-    <g fill="none" stroke="#34d399" stroke-width="6" stroke-linecap="round">
-      <!-- headband -->
-      <path d="M30,90 Q30,10 130,10 Q230,10 230,90"/>
-      <!-- left ear cup -->
-      <rect x="10" y="85" width="44" height="64" rx="10" fill="#34d39920"/>
-      <!-- right ear cup -->
-      <rect x="206" y="85" width="44" height="64" rx="10" fill="#34d39920"/>
-      <!-- mic arm -->
-      <path d="M54,125 Q100,160 130,160"/>
-      <!-- mic capsule -->
-      <circle cx="138" cy="160" r="9" fill="#34d399"/>
+    <!-- Signal arcs around the handset -->
+    <g stroke="#1b3a2f" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.55">
+      <path d="M214,82 Q235,118 214,156"/>
+      <path d="M234,62 Q270,118 234,176"/>
     </g>
-    <text x="130" y="208" text-anchor="middle" fill="#34d399" opacity="0.5" font-family="'SF Mono','Fira Code',monospace" font-size="13" font-weight="bold" letter-spacing="4">SUPPORT</text>
   </g>
 
-  <!-- ══════════════════════════════════════════ -->
-  <!-- Notification bell — far right edge         -->
-  <!-- ══════════════════════════════════════════ -->
-  <g transform="translate(1092, 230) rotate(12, 40, 50)" filter="url(#glow-rose)" opacity="0.55">
-    <g fill="none" stroke="#fb7185" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M20,60 Q20,20 50,20 Q80,20 80,60 L86,76 L14,76 Z"/>
-      <path d="M42,84 Q50,94 58,84"/>
-      <circle cx="75" cy="22" r="8" fill="#fb7185"/>
+  <!-- ════════════════════════════════════════ -->
+  <!-- SUPPORT HEADSET — BOTTOM RIGHT           -->
+  <!-- ════════════════════════════════════════ -->
+  <g transform="translate(960, 420) rotate(6)" filter="url(#softShadow)">
+    <!-- Headband arc -->
+    <path d="M10,90 Q10,10 100,10 Q190,10 190,90" fill="none" stroke="url(#periwinkle)" stroke-width="8" stroke-linecap="round"/>
+    <!-- Left ear cup -->
+    <rect x="-6" y="82" width="38" height="56" rx="10" fill="url(#periwinkle)"/>
+    <rect x="4" y="92" width="18" height="36" rx="5" fill="#1b3a2f" opacity="0.25"/>
+    <!-- Right ear cup -->
+    <rect x="168" y="82" width="38" height="56" rx="10" fill="url(#periwinkle)"/>
+    <rect x="178" y="92" width="18" height="36" rx="5" fill="#1b3a2f" opacity="0.25"/>
+    <!-- Mic arm -->
+    <path d="M32,120 Q70,160 110,150" stroke="url(#periwinkle)" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <!-- Mic capsule -->
+    <ellipse cx="118" cy="150" rx="14" ry="9" fill="url(#coral)"/>
+  </g>
+
+  <!-- ════════════════════════════════════════ -->
+  <!-- DECORATIVE STARS/SPARKS                  -->
+  <!-- ════════════════════════════════════════ -->
+  <g fill="#1b3a2f" opacity="0.55">
+    <g transform="translate(340, 110)">
+      <path d="M0,-12 L3,-3 L12,0 L3,3 L0,12 L-3,3 L-12,0 L-3,-3 Z"/>
     </g>
-    <text x="50" y="106" text-anchor="middle" fill="#fb7185" opacity="0.4" font-family="'SF Mono','Fira Code',monospace" font-size="10" font-weight="bold" letter-spacing="3">NOTIFY</text>
-  </g>
-
-  <!-- ══════════════════════════════════════════ -->
-  <!-- @ mention — far left edge mid              -->
-  <!-- ══════════════════════════════════════════ -->
-  <g transform="translate(24, 260)" filter="url(#glow-amber)" opacity="0.5">
-    <g fill="none" stroke="#fbbf24" stroke-width="5" stroke-linecap="round">
-      <circle cx="40" cy="40" r="36"/>
-      <circle cx="40" cy="40" r="14"/>
-      <path d="M54,40 Q54,60 66,60 Q76,60 76,40 Q76,10 40,10"/>
+    <g transform="translate(890, 340)">
+      <path d="M0,-10 L2.5,-2.5 L10,0 L2.5,2.5 L0,10 L-2.5,2.5 L-10,0 L-2.5,-2.5 Z"/>
     </g>
-    <text x="40" y="102" text-anchor="middle" fill="#fbbf24" opacity="0.45" font-family="'SF Mono','Fira Code',monospace" font-size="12" font-weight="bold" letter-spacing="4">MENTION</text>
+    <g transform="translate(410, 495)">
+      <path d="M0,-8 L2,-2 L8,0 L2,2 L0,8 L-2,2 L-8,0 L-2,-2 Z"/>
+    </g>
+    <g transform="translate(820, 540)">
+      <path d="M0,-9 L2.2,-2.2 L9,0 L2.2,2.2 L0,9 L-2.2,2.2 L-9,0 L-2.2,-2.2 Z"/>
+    </g>
   </g>
 
-  <!-- Center dark backdrop -->
-  <rect width="1200" height="628" fill="url(#centerBackdrop)"/>
+  <!-- Dotted trails connecting bubbles (conversation flow) -->
+  <g fill="#1b3a2f" opacity="0.35">
+    <circle cx="340" cy="240" r="3"/>
+    <circle cx="370" cy="252" r="3"/>
+    <circle cx="400" cy="268" r="3"/>
+    <circle cx="432" cy="288" r="3"/>
+    <circle cx="468" cy="312" r="3"/>
+  </g>
 
-  <!-- Wordmark -->
-  <text x="600" y="260" text-anchor="middle" fill="#f8fafc" font-family="'Georgia','Playfair Display','Times New Roman',serif" font-size="148" font-weight="bold" letter-spacing="-3" opacity="0.97">ahize</text>
+  <!-- ════════════════════════════════════════ -->
+  <!-- CENTER CONTENT                           -->
+  <!-- ════════════════════════════════════════ -->
 
-  <!-- Rule -->
-  <line x1="340" y1="286" x2="860" y2="286" stroke="#475569" stroke-width="1" opacity="0.5"/>
+  <!-- Wordmark "ahize" -->
+  <text x="600" y="270" text-anchor="middle" fill="url(#wordmarkGrad)"
+        font-family="'Cooper','Cooper Black','Georgia',serif"
+        font-size="156" font-weight="900" letter-spacing="-4">ahize</text>
+
+  <!-- Underline accent -->
+  <path d="M470,300 Q600,316 730,300" stroke="url(#coral)" stroke-width="5" fill="none" stroke-linecap="round"/>
 
   <!-- Tagline -->
-  <text x="600" y="326" text-anchor="middle" fill="#cbd5e1" font-family="'SF Mono','Fira Code','Menlo',monospace" font-size="19" letter-spacing="6">LIVE CHAT &amp; CUSTOMER SUPPORT — UNIFIED API</text>
+  <text x="600" y="354" text-anchor="middle" fill="#1b3a2f"
+        font-family="'Inter','Helvetica Neue',Arial,sans-serif"
+        font-size="19" font-weight="500" letter-spacing="1">
+    The unified API for every live-chat widget.
+  </text>
 
-  <!-- Feature pills -->
-  <g font-family="'SF Mono','Fira Code','Menlo',monospace" font-size="14" letter-spacing="1.5">
-    <g transform="translate(254, 356)">
-      <rect x="0" y="0" width="164" height="38" rx="19" fill="#f9731610" stroke="#f97316" stroke-width="1.3" opacity="0.7"/>
-      <text x="82" y="25" text-anchor="middle" fill="#f97316" opacity="0.95">0 DEPENDENCIES</text>
+  <!-- Feature chips -->
+  <g font-family="'Inter','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="600">
+    <!-- Chip 1 coral -->
+    <g transform="translate(312, 388)">
+      <rect x="0" y="0" width="140" height="34" rx="17" fill="url(#coral)"/>
+      <text x="70" y="22" text-anchor="middle" fill="#fff">0 dependencies</text>
     </g>
-    <g transform="translate(434, 356)">
-      <rect x="0" y="0" width="140" height="38" rx="19" fill="#06b6d410" stroke="#06b6d4" stroke-width="1.3" opacity="0.7"/>
-      <text x="70" y="25" text-anchor="middle" fill="#06b6d4" opacity="0.95">5+ PROVIDERS</text>
+    <!-- Chip 2 mint -->
+    <g transform="translate(464, 388)">
+      <rect x="0" y="0" width="130" height="34" rx="17" fill="url(#mint)"/>
+      <text x="65" y="22" text-anchor="middle" fill="#143a2b">13 providers</text>
     </g>
-    <g transform="translate(590, 356)">
-      <rect x="0" y="0" width="140" height="38" rx="19" fill="#a78bfa10" stroke="#a78bfa" stroke-width="1.3" opacity="0.7"/>
-      <text x="70" y="25" text-anchor="middle" fill="#a78bfa" opacity="0.95">TYPESCRIPT</text>
+    <!-- Chip 3 periwinkle -->
+    <g transform="translate(606, 388)">
+      <rect x="0" y="0" width="124" height="34" rx="17" fill="url(#periwinkle)"/>
+      <text x="62" y="22" text-anchor="middle" fill="#fff">TypeScript</text>
     </g>
-    <g transform="translate(746, 356)">
-      <rect x="0" y="0" width="172" height="38" rx="19" fill="#34d39910" stroke="#34d399" stroke-width="1.3" opacity="0.7"/>
-      <text x="86" y="25" text-anchor="middle" fill="#34d399" opacity="0.95">TREE-SHAKEABLE</text>
+    <!-- Chip 4 butter -->
+    <g transform="translate(742, 388)">
+      <rect x="0" y="0" width="150" height="34" rx="17" fill="url(#butter)"/>
+      <text x="75" y="22" text-anchor="middle" fill="#5a3a00">tree-shakeable</text>
     </g>
   </g>
 
   <!-- Provider list -->
-  <text x="600" y="432" text-anchor="middle" fill="#94a3b8" font-family="'SF Mono','Fira Code',monospace" font-size="12" letter-spacing="2.2">INTERCOM · CRISP · TAWK · ZENDESK · HUBSPOT · CHATWOOT · DRIFT · FRESHCHAT · OLARK</text>
+  <text x="600" y="460" text-anchor="middle" fill="#1b3a2f" opacity="0.65"
+        font-family="'JetBrains Mono','SF Mono',monospace" font-size="12" letter-spacing="1.4">
+    Intercom · Crisp · Tawk · Zendesk · HubSpot · Chatwoot · LiveChat · Drift · Freshchat · Olark · Userlike · HelpScout
+  </text>
 
-  <!-- npm install badge -->
-  <g transform="translate(504, 460)">
-    <rect x="0" y="0" width="192" height="40" rx="8" fill="#0f172a" stroke="#1e293b" stroke-width="1.2"/>
-    <text x="20" y="26" fill="#64748b" font-family="'SF Mono','Fira Code',monospace" font-size="16">$</text>
-    <text x="38" y="26" fill="#94a3b8" font-family="'SF Mono','Fira Code',monospace" font-size="16"> npm i </text>
-    <text x="118" y="26" fill="#f8fafc" font-family="'SF Mono','Fira Code',monospace" font-size="16" font-weight="bold">ahize</text>
+  <!-- npm install chip -->
+  <g transform="translate(492, 488)" filter="url(#softShadow)">
+    <rect x="0" y="0" width="216" height="42" rx="21" fill="#1b3a2f"/>
+    <text x="22" y="27" fill="#ff8a65" font-family="'JetBrains Mono','SF Mono',monospace" font-size="14" font-weight="700">$</text>
+    <text x="40" y="27" fill="#fbf6ed" font-family="'JetBrains Mono','SF Mono',monospace" font-size="14" font-weight="500">npm i</text>
+    <text x="96" y="27" fill="#83e0bd" font-family="'JetBrains Mono','SF Mono',monospace" font-size="14" font-weight="700">ahize</text>
   </g>
 
   <!-- GitHub link -->
-  <text x="600" y="556" text-anchor="middle" fill="#64748b" font-family="'SF Mono','Fira Code',monospace" font-size="13" letter-spacing="1.5">github.com/productdevbook/ahize</text>
-
-  <!-- Grain & vignette -->
-  <rect width="1200" height="628" filter="url(#grain)" opacity="0.2"/>
-  <rect width="1200" height="628" fill="url(#vignetteGrad)" opacity="0.45"/>
+  <text x="600" y="572" text-anchor="middle" fill="#1b3a2f" opacity="0.45"
+        font-family="'Inter','Helvetica Neue',Arial,sans-serif"
+        font-size="12" letter-spacing="1">
+    github.com/productdevbook/ahize
+  </text>
 </svg>

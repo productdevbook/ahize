@@ -1,3 +1,10 @@
+/**
+ * capabilities() and supports() — describe what each provider can do
+ * (HMAC, JWT, regions, unread bridge, ...) so callers branch on
+ * capability instead of provider name.
+ *
+ * @module
+ */
 // Capability matrix — per-provider feature flags so consumers can
 // programmatically pick the right provider, or short-circuit code paths
 // when a capability isn't supported.

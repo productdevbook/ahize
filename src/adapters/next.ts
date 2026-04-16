@@ -1,3 +1,8 @@
+/**
+ * Next.js App Router adapter — auto-pageView on route changes.
+ *
+ * @module
+ */
 // Next.js adapters — both App Router and Pages Router.
 //
 // App Router usage:

@@ -1,3 +1,8 @@
+/**
+ * Svelte store.
+ *
+ * @module
+ */
 // Framework-agnostic Svelte store factory. Returns a writable-shaped object
 // (subscribe + unsubscribe) compatible with Svelte's store contract — Svelte
 // itself reads from `subscribe`, so we don't need to import svelte/store.

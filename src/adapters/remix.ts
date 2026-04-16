@@ -1,3 +1,8 @@
+/**
+ * Remix hook — useLocation bridge for SPA pageView.
+ *
+ * @module
+ */
 // Remix adapter — re-uses the Next adapter shape (both are React routers).
 // Mount once in root.tsx; pageView fires on Remix navigation via the
 // useLocation() hook the consumer passes in.

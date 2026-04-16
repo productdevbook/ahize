@@ -1,9 +1,12 @@
 /**
+ * Userlike v1 messenger — wrapped under the unified `ahize` provider surface.
+ *
  * @deprecated The Userlike v1 CDN bundle (`userlike-cdn-widgets.s3-eu-west-1...`)
- * loaded by this wrapper reaches EOL on 2026-08-01. Userlike has rebranded to
- * Lime Connect; the v2 SDK (`@userlike/messenger`, `createMessenger({ version: 2 })`)
- * has a different surface and is the recommended migration target.
- * See https://github.com/productdevbook/ahize/issues/95 for migration notes.
+ * reaches EOL on 2026-08-01. Userlike rebranded to Lime Connect; the v2 SDK
+ * (`@userlike/messenger` + `createMessenger({ version: 2 })`) has a different
+ * surface. See https://github.com/productdevbook/ahize/issues/95 for migration.
+ *
+ * @module
  */
 import { waitForDefer } from "../_defer.ts"
 import { createIdentityStore } from "../_identity.ts"

@@ -1,3 +1,9 @@
+/**
+ * Content-Security-Policy helpers — per-provider connect-src /
+ * script-src / img-src directives, plus merge utilities.
+ *
+ * @module
+ */
 import type { ProviderName } from "./_types.ts"
 
 export type CspDirectiveKey =

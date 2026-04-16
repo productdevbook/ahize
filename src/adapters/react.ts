@@ -1,3 +1,8 @@
+/**
+ * Framework-agnostic React hook factory.
+ *
+ * @module
+ */
 // Framework-agnostic React adapter — uses only React hook signatures, no
 // runtime React import. Consumer brings their own React. Works in any
 // React-compatible runtime (React 18+, Preact via the compat shim).

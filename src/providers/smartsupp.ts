@@ -1,3 +1,13 @@
+/**
+ * Smartsupp chatbox — wrapped under the unified `ahize` provider surface.
+ *
+ * Exports the standard surface (load, identify, track, pageView, show,
+ * hide, shutdown, destroy, ready, isReady, state, getIdentity,
+ * onIdentityChange) plus provider-specific extras — see README
+ * "Providers" table.
+ *
+ * @module
+ */
 import { waitForDefer } from "../_defer.ts"
 import { createIdentityStore } from "../_identity.ts"
 import { createLifecycle, hashConfig } from "../_lifecycle.ts"

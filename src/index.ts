@@ -1,3 +1,12 @@
+/**
+ * Main `ahize` entry point. Re-exports shared types (Identity,
+ * LoadOptions, EventMetadata, ...) and the AhizeError hierarchy.
+ *
+ * Providers live under `ahize/<provider>` (`ahize/intercom`, ...);
+ * framework adapters under `ahize/<framework>`.
+ *
+ * @module
+ */
 export { AhizeError, ProviderNotLoadedError, ScriptLoadError } from "./errors.ts"
 export type {
   BaseLoadOptions,

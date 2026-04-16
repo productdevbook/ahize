@@ -1,3 +1,8 @@
+/**
+ * Vue 3 composable.
+ *
+ * @module
+ */
 // Vue 3 plugin & composable. Consumer brings their own Vue runtime via
 // the createUseAhize(vueImports) factory so we don't peer-dep vue.
 

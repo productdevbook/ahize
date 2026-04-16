@@ -1,3 +1,9 @@
+/**
+ * diagnose() — dev-mode CDN probe and CSP-issue checker. Pings the
+ * provider script URL, looks for common misconfigurations.
+ *
+ * @module
+ */
 // Dev-mode diagnostics — call once during local development to surface
 // common widget-script load failures (CORS, blocked URL, wrong key shape).
 // Wraps fetch() with HEAD where possible so we don't accidentally double-load

@@ -1,3 +1,8 @@
+/**
+ * SvelteKit adapter wiring afterNavigate to pageView.
+ *
+ * @module
+ */
 // SvelteKit `+layout.svelte` adapter. Use afterNavigate from $app/navigation
 // to fire pageView on each client-side route change.
 

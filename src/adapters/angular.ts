@@ -1,3 +1,8 @@
+/**
+ * Angular standalone service.
+ *
+ * @module
+ */
 // Angular v16+ standalone-compatible service factory.
 // Consumer brings their Injectable + their Router for navigation events.
 

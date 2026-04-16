@@ -1,3 +1,8 @@
+/**
+ * Helper for forwarding settings to Partytown workers.
+ *
+ * @module
+ */
 // Partytown adapter — sugar around the existing `partytown` flag on every
 // provider's load(). Use this when you want the provider's CDN script to run
 // in a worker via Builder's Partytown library.

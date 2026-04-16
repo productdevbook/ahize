@@ -1,14 +1,16 @@
-// Sendbird is a chat platform, not a support widget. The unified surface maps
-// awkwardly: track() throws, identify() is part of boot options, show()/hide()
-// are CSS-level. Use Sendbird Desk if you want full support semantics.
-
 /**
- * @deprecated The Sendbird AI Chatbot Widget product targeted by this wrapper
- * was discontinued by Sendbird. The source repo `sendbird/chat-ai-widget` was
- * archived 2025-07-09 at v1.9.7 and the AI Chatbot docs were removed from
- * sendbird.com. The successor "AI Agent" has a different API surface; Sendbird
- * Desk is recommended for support semantics.
- * See https://github.com/productdevbook/ahize/issues/91 for migration notes.
+ * Sendbird AI Chatbot Widget — wrapped under the unified `ahize` provider
+ * surface. (Sendbird is a chat platform, not a support widget; the unified
+ * surface maps awkwardly: track() throws, identify() is part of boot options,
+ * show()/hide() are CSS-level. Use Sendbird Desk for full support semantics.)
+ *
+ * @deprecated The Sendbird AI Chatbot Widget product is discontinued. The
+ * source repo `sendbird/chat-ai-widget` was archived 2025-07-09 at v1.9.7 and
+ * the AI Chatbot docs were removed from sendbird.com. The successor "AI Agent"
+ * has a different API surface; Sendbird Desk is recommended for support
+ * semantics. See https://github.com/productdevbook/ahize/issues/91 for notes.
+ *
+ * @module
  */
 import { waitForDefer } from "../_defer.ts"
 import { createIdentityStore } from "../_identity.ts"

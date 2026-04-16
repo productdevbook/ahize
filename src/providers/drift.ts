@@ -1,8 +1,13 @@
 /**
+ * Drift conversational marketing widget — wrapped under the unified `ahize`
+ * provider surface.
+ *
  * @deprecated Drift is being sunset by Clari + Salesloft (announced 2026-03-06,
- * ~60–90 day customer wind-down). Drift was taken offline in Sept 2025 after the
- * Salesloft OAuth breach. New integrations should pick a different provider.
- * See https://github.com/productdevbook/ahize/issues/81 for migration notes.
+ * ~60–90 day customer wind-down). Drift was taken offline in Sept 2025 after
+ * the Salesloft OAuth breach. New integrations should pick a different
+ * provider. See https://github.com/productdevbook/ahize/issues/81 for notes.
+ *
+ * @module
  */
 import { waitForDefer } from "../_defer.ts"
 import { createIdentityStore } from "../_identity.ts"

@@ -1,3 +1,8 @@
+/**
+ * Nuxt 3 / Nuxt 4 plugin factory.
+ *
+ * @module
+ */
 // Nuxt 3 + 4 plugin factory. Use inside `~/plugins/ahize.client.ts`:
 //
 //   import { defineNuxtPlugin } from "#app";

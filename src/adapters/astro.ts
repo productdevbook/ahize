@@ -1,3 +1,8 @@
+/**
+ * Astro island + view-transitions.
+ *
+ * @module
+ */
 // Astro island integration — `<AhizeIsland client:idle>` boots a provider on
 // the client side. Pure framework boundary helper since Astro just renders
 // strings server-side; the actual mount runs the provider's load() in the

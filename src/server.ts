@@ -1,3 +1,10 @@
+/**
+ * SSR-safe stub. Mirrors every provider/adapter export as a typed
+ * no-op so server runtimes can import `ahize/server` without touching
+ * window or document.
+ *
+ * @module
+ */
 // Server-side stub — safe to import from any SSR environment.
 // Every method is a no-op that matches the client surface shape, so
 // consumers can unconditionally import { load, identify, ... } from "ahize/server"

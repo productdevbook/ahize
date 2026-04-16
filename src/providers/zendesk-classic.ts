@@ -1,13 +1,16 @@
-// Zendesk Web Widget (Classic) — predates Messenger. Different snippet, different
-// API surface (zE('webWidget', '...')). Kept separate from ahize/zendesk so
-// types don't pretend cross-compatibility.
-
 /**
- * @deprecated Web Widget (Classic) is only available on Zendesk accounts created
- * before 2023-06-05. The underlying Chat Web SDK / Chat Conversation APIs entered
- * active removal on 2025-04-30. New integrations should use `ahize/zendesk`
- * (Messenger).
- * See https://github.com/productdevbook/ahize/issues/97 for migration notes.
+ * Zendesk Web Widget Classic — wrapped under the unified `ahize` provider
+ * surface. Predates Messenger; different snippet and API surface
+ * (`zE('webWidget', '...')`). Kept separate from `ahize/zendesk` so types
+ * don't pretend cross-compatibility.
+ *
+ * @deprecated Web Widget (Classic) is only available on Zendesk accounts
+ * created before 2023-06-05. The underlying Chat Web SDK / Chat Conversation
+ * APIs entered active removal on 2025-04-30. New integrations should use
+ * `ahize/zendesk` (Messenger). See
+ * https://github.com/productdevbook/ahize/issues/97 for migration notes.
+ *
+ * @module
  */
 import { waitForDefer } from "../_defer.ts"
 import { createIdentityStore } from "../_identity.ts"

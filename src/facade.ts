@@ -1,3 +1,9 @@
+/**
+ * mountFacade — sub-2KB launcher button that defers loading the real
+ * widget until the visitor interacts.
+ *
+ * @module
+ */
 // Lightweight launcher — renders a provider-shaped floating button with
 // pure DOM + inline styles. No framework, no CSS file. Under 2KB gzipped.
 // On first interaction, it calls the provided boot() and replaces itself.

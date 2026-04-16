@@ -413,6 +413,18 @@ directly from `../src/providers/chatwoot.ts`, so any code change in
 `baseUrl` if self-hosted), hit **load()**, then play with
 identify/track/show/hide/setLocale and watch the event log.
 
+## Sponsors
+
+<p align="center">
+  <a href="https://github.com/sponsors/productdevbook">
+    <img src="https://cdn.jsdelivr.net/gh/productdevbook/static/sponsors.svg" alt="Sponsors of productdevbook" />
+  </a>
+</p>
+
+If `ahize` saves you a few hours of live-chat integration pain, consider
+[sponsoring on GitHub](https://github.com/sponsors/productdevbook) so
+work on the next provider + framework adapter keeps going.
+
 ## Contributing
 
 Issues and PRs welcome at

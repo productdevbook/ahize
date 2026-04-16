@@ -36,6 +36,39 @@ function bus(): CrispArray {
 const store = createIdentityStore()
 const lifecycle = createLifecycle()
 const unreadListeners = new Set<(count: number) => void>()
+
+export type CrispEventName =
+  | "chatOpened"
+  | "chatClosed"
+  | "chatInitiated"
+  | "messageSent"
+  | "messageReceived"
+  | "messageComposeSent"
+  | "messageComposeReceived"
+  | "helpdeskQueried"
+  | "userEmailChanged"
+  | "userPhoneChanged"
+  | "userNicknameChanged"
+  | "userAvatarChanged"
+  | "websiteAvailabilityChanged"
+
+const CRISP_EVENT_MAP: Record<string, CrispEventName> = {
+  "chat:opened": "chatOpened",
+  "chat:closed": "chatClosed",
+  "chat:initiated": "chatInitiated",
+  "message:sent": "messageSent",
+  "message:received": "messageReceived",
+  "message:compose:sent": "messageComposeSent",
+  "message:compose:received": "messageComposeReceived",
+  "helpdesk:queried": "helpdeskQueried",
+  "user:email:changed": "userEmailChanged",
+  "user:phone:changed": "userPhoneChanged",
+  "user:nickname:changed": "userNicknameChanged",
+  "user:avatar:changed": "userAvatarChanged",
+  "website:availability:changed": "websiteAvailabilityChanged",
+}
+
+const eventListeners = new Map<CrispEventName, Set<(payload?: unknown) => void>>()
 let readyPromise: Promise<void> | undefined
 let readyResolve: (() => void) | undefined
 
@@ -52,6 +85,18 @@ export interface CrispLoadOptions extends LoadOptions {
   websiteId: string
   tokenId?: string
   locale?: string
+  /** Suppress SDK errors instead of throwing. */
+  safeMode?: boolean
+  /** Restrict the chatbox cookie to this domain (e.g. ".example.com"). */
+  cookieDomain?: string
+  /** Custom cookie lifetime in seconds (default: ~6 months). */
+  cookieExpire?: number
+  /** Merge sessions across pages/tabs. */
+  sessionMerge?: boolean
+  /** Force the chatbox to stay maximized. */
+  lockMaximized?: boolean
+  /** Force the chatbox into fullview mode. */
+  lockFullview?: boolean
 }
 
 export async function load(options: CrispLoadOptions): Promise<void> {
@@ -70,9 +115,15 @@ export async function load(options: CrispLoadOptions): Promise<void> {
   bus()
   w().CRISP_WEBSITE_ID = options.websiteId
   if (options.tokenId) w().CRISP_TOKEN_ID = options.tokenId
-  if (options.locale) {
-    w().CRISP_RUNTIME_CONFIG = { ...w().CRISP_RUNTIME_CONFIG, locale: options.locale }
-  }
+  const runtime: Record<string, unknown> = { ...w().CRISP_RUNTIME_CONFIG }
+  if (options.locale !== undefined) runtime["locale"] = options.locale
+  if (options.safeMode !== undefined) runtime["safeMode"] = options.safeMode
+  if (options.cookieDomain !== undefined) runtime["cookieDomain"] = options.cookieDomain
+  if (options.cookieExpire !== undefined) runtime["cookieExpire"] = options.cookieExpire
+  if (options.sessionMerge !== undefined) runtime["sessionMerge"] = options.sessionMerge
+  if (options.lockMaximized !== undefined) runtime["lockMaximized"] = options.lockMaximized
+  if (options.lockFullview !== undefined) runtime["lockFullview"] = options.lockFullview
+  if (Object.keys(runtime).length > 0) w().CRISP_RUNTIME_CONFIG = runtime
   try {
     await injectScript({
       id: "ahize-crisp",
@@ -92,20 +143,18 @@ export async function load(options: CrispLoadOptions): Promise<void> {
       readyResolve?.()
     },
   ])
-  bus().push([
-    "on",
-    "message:received",
-    () => {
-      // unread counter triggers via message:received/chat:opened - approximation
-    },
-  ])
-  bus().push([
-    "on",
-    "chat:closed",
-    () => {
-      // leave hooks for facade wrappers
-    },
-  ])
+  // Wire every documented Crisp lifecycle event to the typed emitter.
+  for (const [domName, mapped] of Object.entries(CRISP_EVENT_MAP)) {
+    bus().push([
+      "on",
+      domName,
+      (payload: unknown) => {
+        const set = eventListeners.get(mapped)
+        if (!set) return
+        for (const l of set) l(payload)
+      },
+    ])
+  }
   lifecycle.transition("ready")
 }
 
@@ -202,8 +251,8 @@ export function track<T extends EventMetadata = EventMetadata>(
 
 export function show(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
+  // Reveal the chat without forcibly expanding the panel.
   bus().push(["do", "chat:show"])
-  bus().push(["do", "chat:open"])
   return Promise.resolve()
 }
 
@@ -211,6 +260,88 @@ export function hide(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   bus().push(["do", "chat:hide"])
   return Promise.resolve()
+}
+
+export function open(): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  bus().push(["do", "chat:open"])
+  return Promise.resolve()
+}
+
+export function close(): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  bus().push(["do", "chat:close"])
+  return Promise.resolve()
+}
+
+export function toggle(): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  bus().push(["do", "chat:toggle"])
+  return Promise.resolve()
+}
+
+export function sendMessage(text: string): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  bus().push(["do", "message:send", ["text", text]])
+  return Promise.resolve()
+}
+
+export function showLocalMessage(text: string): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  bus().push(["do", "message:show", ["text", text]])
+  return Promise.resolve()
+}
+
+export function markRead(): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  bus().push(["do", "message:read"])
+  return Promise.resolve()
+}
+
+export function setMessageText(text: string): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  bus().push(["set", "message:text", [text]])
+  return Promise.resolve()
+}
+
+export function setUserAvatar(url: string): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  bus().push(["set", "user:avatar", [url]])
+  return Promise.resolve()
+}
+
+export function setSessionSegments(segments: string[], overwrite = false): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  bus().push(["set", "session:segments", [segments, overwrite]])
+  return Promise.resolve()
+}
+
+export function helpdeskSearch(query: string): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  bus().push(["do", "helpdesk:search", [query]])
+  return Promise.resolve()
+}
+
+export function helpdeskArticleOpen(locale: string, slug: string): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  bus().push(["do", "helpdesk:article:open", [locale, slug]])
+  return Promise.resolve()
+}
+
+export function runTrigger(triggerId: string): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  bus().push(["do", "trigger:run", [triggerId]])
+  return Promise.resolve()
+}
+
+export function on(event: CrispEventName, listener: (payload?: unknown) => void): () => void {
+  let set = eventListeners.get(event)
+  if (!set) {
+    set = new Set()
+    eventListeners.set(event, set)
+  }
+  set.add(listener)
+  return () => set?.delete(listener)
 }
 
 export function shutdown(): Promise<void> {
@@ -232,6 +363,7 @@ export async function destroy(): Promise<void> {
   Reflect.deleteProperty(g, "CRISP_RUNTIME_CONFIG")
   store.reset()
   unreadListeners.clear()
+  eventListeners.clear()
   readyPromise = undefined
   readyResolve = undefined
   lifecycle.clearConfigHash()

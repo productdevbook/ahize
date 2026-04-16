@@ -11,13 +11,29 @@ import type {
   LoadOptions,
 } from "../_types.ts"
 
+interface LiveAgentButton {
+  onOnline?: () => void
+  onOffline?: () => void
+  onClick?: () => void
+  onCloseFunction_?: () => void
+}
+
+interface LiveAgentInstance {
+  hasOpenedWidget?(): boolean
+}
+
 interface LiveAgentAPI {
-  setUserDetails(email: string, firstName: string, lastName: string, phone: string): void
+  setUserDetails(email?: string, firstName?: string, lastName?: string, phone?: string): void
+  addUserDetail?(key: "email" | "firstName" | "lastName" | "phone", value: string): void
   addContactField(field: string, value: unknown): void
-  createButton(buttonId: string, container?: unknown): void
+  addTicketField?(key: string, value: unknown): void
+  clearAllUserDetails?(): void
+  setVisitorLocation?(url: string): void
+  disableOnlineVisitorsTracking?(): void
+  createButton(buttonId: string, container?: unknown): LiveAgentButton | undefined
+  createForm?(formId: string, container?: unknown): LiveAgentButton | undefined
   hideButton?(buttonId: string): void
-  onChatStarted?: () => void
-  onChatEnded?: () => void
+  instance?: LiveAgentInstance
 }
 
 interface LiveAgentWindow {
@@ -34,12 +50,17 @@ const lifecycle = createLifecycle()
 let currentSubdomain: string | undefined
 let currentButtonId: string | undefined
 
+export type LiveAgentEventName = "online" | "offline" | "chatStarted" | "chatEnded"
+const eventListeners = new Map<LiveAgentEventName, Set<() => void>>()
+
 export interface LiveAgentLoadOptions extends LoadOptions {
   /** e.g. "yourcompany" — yourcompany.ladesk.com */
   accountSubdomain: string
   buttonId: string
   /** Self-hosted base URL override (e.g. "https://support.example.com"). */
   selfHostedBaseUrl?: string
+  /** When true, calls LiveAgent.disableOnlineVisitorsTracking() before createButton. */
+  disableOnlineVisitorsTracking?: boolean
 }
 
 export async function load(options: LiveAgentLoadOptions): Promise<void> {
@@ -77,7 +98,24 @@ export async function load(options: LiveAgentLoadOptions): Promise<void> {
   for (let i = 0; i < 80; i++) {
     const api = w().LiveAgent
     if (api) {
-      api.createButton(options.buttonId)
+      if (options.disableOnlineVisitorsTracking) api.disableOnlineVisitorsTracking?.()
+      const button = api.createButton(options.buttonId)
+      if (button) {
+        // Vendor pattern: monkey-patch button.onClick / onCloseFunction_ for chat
+        // start/end, and onOnline / onOffline for agent availability.
+        button.onClick = () => {
+          for (const l of eventListeners.get("chatStarted") ?? []) l()
+        }
+        button.onCloseFunction_ = () => {
+          for (const l of eventListeners.get("chatEnded") ?? []) l()
+        }
+        button.onOnline = () => {
+          for (const l of eventListeners.get("online") ?? []) l()
+        }
+        button.onOffline = () => {
+          for (const l of eventListeners.get("offline") ?? []) l()
+        }
+      }
       queue.ready(api)
       break
     }
@@ -113,8 +151,54 @@ export function track<T extends EventMetadata = EventMetadata>(
   })
 }
 
-export function pageView(_info?: { path?: string; locale?: string }): Promise<void> {
-  return Promise.resolve()
+export function pageView(info?: { path?: string; locale?: string }): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((api) => {
+    if (info?.path && api.setVisitorLocation) api.setVisitorLocation(info.path)
+  })
+}
+
+export function addUserDetail(
+  key: "email" | "firstName" | "lastName" | "phone",
+  value: string,
+): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((api) => api.addUserDetail?.(key, value))
+}
+
+export function addTicketField(key: string, value: unknown): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((api) => api.addTicketField?.(key, value))
+}
+
+export function clearAllUserDetails(): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((api) => api.clearAllUserDetails?.())
+}
+
+export function setVisitorLocation(url: string): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((api) => api.setVisitorLocation?.(url))
+}
+
+export function createForm(formId: string, container?: unknown): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((api) => api.createForm?.(formId, container))
+}
+
+export function hasOpenedWidget(): boolean | undefined {
+  if (!isBrowser()) return undefined
+  return w().LiveAgent?.instance?.hasOpenedWidget?.()
+}
+
+export function on(event: LiveAgentEventName, listener: () => void): () => void {
+  let set = eventListeners.get(event)
+  if (!set) {
+    set = new Set()
+    eventListeners.set(event, set)
+  }
+  set.add(listener)
+  return () => set?.delete(listener)
 }
 
 export function show(): Promise<void> {
@@ -133,9 +217,12 @@ export function hide(): Promise<void> {
 
 export function shutdown(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
-  store.reset()
-  lifecycle.transition("shutdown")
-  return Promise.resolve()
+  return queue
+    .enqueue((api) => api.clearAllUserDetails?.())
+    .then(() => {
+      store.reset()
+      lifecycle.transition("shutdown")
+    })
 }
 
 export async function destroy(): Promise<void> {
@@ -146,6 +233,7 @@ export async function destroy(): Promise<void> {
   Reflect.deleteProperty(g, "LiveAgent")
   queue.reset()
   store.reset()
+  eventListeners.clear()
   currentSubdomain = undefined
   currentButtonId = undefined
   lifecycle.clearConfigHash()

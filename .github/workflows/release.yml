@@ -60,6 +60,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: 💖 Append sponsor footer to release notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          current=$(gh release view "$TAG" --json body -q .body)
+          footer=$'\n\n---\n\n### 💖 Support ahize\n\nIf ahize saves you engineering time, consider [sponsoring on GitHub](https://github.com/sponsors/productdevbook) — it keeps the next provider + framework adapter shipping.\n\n<a href="https://github.com/sponsors/productdevbook"><img src="https://cdn.jsdelivr.net/gh/productdevbook/static/sponsors.svg" alt="Sponsors" /></a>'
+          printf '%s%s' "$current" "$footer" | gh release edit "$TAG" --notes-file -
+
       - name: 📊 Summary
         run: |
           echo "## Release Complete 🚀" >> $GITHUB_STEP_SUMMARY

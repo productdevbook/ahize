@@ -11,7 +11,7 @@ import type {
   LoadOptions,
 } from "../_types.ts"
 
-type OlarkFn = (method: string, ...args: unknown[]) => void
+type OlarkFn = (method: string, ...args: unknown[]) => unknown
 
 interface OlarkWindow {
   olark?: OlarkFn
@@ -25,8 +25,55 @@ const queue = createQueue<OlarkFn>()
 const store = createIdentityStore()
 const lifecycle = createLifecycle()
 
+export type OlarkEventName =
+  | "boxShow"
+  | "boxHide"
+  | "boxExpand"
+  | "boxShrink"
+  | "chatReady"
+  | "beginConversation"
+  | "messageToVisitor"
+  | "messageToOperator"
+  | "commandFromOperator"
+  | "offlineMessageToOperator"
+  | "operatorsAvailable"
+  | "operatorsAway"
+
+const OLARK_EVENT_MAP: Record<OlarkEventName, string> = {
+  boxShow: "api.box.onShow",
+  boxHide: "api.box.onHide",
+  boxExpand: "api.box.onExpand",
+  boxShrink: "api.box.onShrink",
+  chatReady: "api.chat.onReady",
+  beginConversation: "api.chat.onBeginConversation",
+  messageToVisitor: "api.chat.onMessageToVisitor",
+  messageToOperator: "api.chat.onMessageToOperator",
+  commandFromOperator: "api.chat.onCommandFromOperator",
+  offlineMessageToOperator: "api.chat.onOfflineMessageToOperator",
+  operatorsAvailable: "api.chat.onOperatorsAvailable",
+  operatorsAway: "api.chat.onOperatorsAway",
+}
+
+const eventListeners = new Map<OlarkEventName, Set<(payload?: unknown) => void>>()
+
+export interface OlarkVisitorDetails {
+  emailAddress?: string
+  fullName?: string
+  phoneNumber?: string
+  organization?: string
+  city?: string
+  region?: string
+  country?: string
+  customFields?: Record<string, unknown>
+  [key: string]: unknown
+}
+
 export interface OlarkLoadOptions extends LoadOptions {
   siteId: string
+  /** Initial agent group routing. */
+  group?: string
+  /** Initial widget locale. */
+  locale?: string
 }
 
 export async function load(options: OlarkLoadOptions): Promise<void> {
@@ -58,6 +105,18 @@ export async function load(options: OlarkLoadOptions): Promise<void> {
     const olark = w().olark
     if (typeof olark === "function") {
       olark("api.box.onReady", () => {})
+      // Wire every documented Olark event to the typed emitter.
+      for (const [mapped, vendor] of Object.entries(OLARK_EVENT_MAP) as Array<
+        [OlarkEventName, string]
+      >) {
+        olark(vendor, (payload: unknown) => {
+          const set = eventListeners.get(mapped)
+          if (!set) return
+          for (const l of set) l(payload)
+        })
+      }
+      if (options.group !== undefined) olark("api.chat.setOperatorGroup", { group: options.group })
+      if (options.locale !== undefined) olark("api.box.setLocale", options.locale)
       queue.ready(olark)
       break
     }
@@ -116,6 +175,67 @@ export function shrink(): Promise<void> {
   return queue.enqueue((olark) => olark("api.box.shrink"))
 }
 
+export function setLocale(locale: string): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((olark) => olark("api.box.setLocale", locale))
+}
+
+export function setOperatorGroup(group: string): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((olark) => olark("api.chat.setOperatorGroup", { group }))
+}
+
+export function sendMessageToVisitor(body: string): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((olark) => olark("api.chat.sendMessageToVisitor", { body }))
+}
+
+export function sendNotificationToVisitor(body: string): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((olark) => olark("api.chat.sendNotificationToVisitor", { body }))
+}
+
+export function sendNotificationToOperator(body: string): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((olark) => olark("api.chat.sendNotificationToOperator", { body }))
+}
+
+export function updateVisitorNickname(args: {
+  snippet: string
+  hideDefault?: boolean
+}): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((olark) => olark("api.chat.updateVisitorNickname", args))
+}
+
+export function updateVisitorStatus(args: { snippet: string | string[] }): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((olark) => olark("api.chat.updateVisitorStatus", args))
+}
+
+export function getVisitorDetails(): Promise<OlarkVisitorDetails | undefined> {
+  if (!isBrowser()) return Promise.resolve(undefined)
+  return new Promise((resolve) => {
+    queue
+      .enqueue((olark) => {
+        olark("api.visitor.getDetails", (details: unknown) =>
+          resolve(details as OlarkVisitorDetails | undefined),
+        )
+      })
+      .catch(() => resolve(undefined))
+  })
+}
+
+export function on(event: OlarkEventName, listener: (payload?: unknown) => void): () => void {
+  let set = eventListeners.get(event)
+  if (!set) {
+    set = new Set()
+    eventListeners.set(event, set)
+  }
+  set.add(listener)
+  return () => set?.delete(listener)
+}
+
 export function shutdown(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   return queue
@@ -137,6 +257,7 @@ export async function destroy(): Promise<void> {
   Reflect.deleteProperty(g, "olark")
   queue.reset()
   store.reset()
+  eventListeners.clear()
   lifecycle.clearConfigHash()
   lifecycle.transition("idle")
 }

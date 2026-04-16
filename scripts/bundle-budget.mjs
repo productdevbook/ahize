@@ -19,6 +19,7 @@ const BUDGETS = [
   { glob: /^providers\/tawk\.mjs$/, max: 9216, label: "provider:tawk" },
   { glob: /^providers\/zendesk\.mjs$/, max: 7168, label: "provider:zendesk" },
   { glob: /^providers\/olark\.mjs$/, max: 7168, label: "provider:olark" },
+  { glob: /^providers\/jivochat\.mjs$/, max: 8192, label: "provider:jivochat" },
   { glob: /^providers\/.+\.mjs$/, max: 6144, label: "provider" },
   { glob: /^index\.mjs$/, max: 4096, label: "core" },
   { glob: /^facade\.mjs$/, max: 3072, label: "facade" },

@@ -145,9 +145,9 @@
   <!-- npm install pill (20px font, 56h pill ⇒ baseline y≈35) -->
   <g transform="translate(458, 488)" filter="url(#softShadow)">
     <rect x="0" y="0" width="284" height="56" rx="28" fill="#1b3a2f"/>
-    <text x="142" y="35" text-anchor="middle"
+    <text x="142" y="35" text-anchor="middle" xml:space="preserve"
           font-family="'JetBrains Mono','SF Mono',monospace" font-size="20" font-weight="700">
-      <tspan fill="#ff8a65" font-weight="800">$</tspan><tspan fill="#fbf6ed"> npm i </tspan><tspan fill="#83e0bd" font-weight="800">ahize</tspan>
+      <tspan fill="#ff8a65" font-weight="800">$</tspan><tspan fill="#fbf6ed">&#160;npm&#160;i&#160;</tspan><tspan fill="#83e0bd" font-weight="800">ahize</tspan>
     </text>
   </g>
 

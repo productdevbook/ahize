@@ -1,4 +1,4 @@
-// Nuxt 3 plugin factory. Use inside `~/plugins/ahize.client.ts`:
+// Nuxt 3 + 4 plugin factory. Use inside `~/plugins/ahize.client.ts`:
 //
 //   import { defineNuxtPlugin } from "#app";
 //   import { useNuxtApp } from "#imports";

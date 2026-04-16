@@ -46,7 +46,7 @@ src/
     sendbird.ts             # ahize/sendbird (track throws unless onTrack)
   adapters/
     next.ts                 # ahize/next (App Router + Pages Router)
-    nuxt.ts                 # ahize/nuxt (Nuxt 3 plugin factory)
+    nuxt.ts                 # ahize/nuxt (Nuxt 3 + 4 plugin factory)
     vue.ts                  # ahize/vue (Vue 3 composable)
     react.ts                # ahize/react (framework-agnostic React hook)
     svelte.ts               # ahize/svelte (store)

@@ -126,7 +126,7 @@ silent drop. See `ahize/capabilities` for who supports what.
 
 `ahize` is safe to import from any server runtime. Every method
 short-circuits when `window`/`document` are unavailable, so this works
-in Next.js App Router, Nuxt 3, Remix, SvelteKit, Astro, and Cloudflare
+in Next.js App Router, Nuxt 4, Remix, SvelteKit, Astro, and Cloudflare
 Workers without guards.
 
 ```ts
@@ -168,10 +168,11 @@ Mount once in your root layout. `pageView()` auto-fires on every route
 change — fixes HubSpot's targeting rules, keeps Intercom's session
 tracking accurate.
 
-### Nuxt 3
+### Nuxt 4 (and Nuxt 3)
 
 ```ts
-// plugins/ahize.client.ts
+// app/plugins/ahize.client.ts   (Nuxt 4 default srcDir)
+// plugins/ahize.client.ts       (Nuxt 3, or Nuxt 4 with custom srcDir)
 import { defineNuxtPlugin } from "#app";
 import * as intercom from "ahize/intercom";
 import { createNuxtAhizePlugin } from "ahize/nuxt";
@@ -184,6 +185,10 @@ export default defineNuxtPlugin(
   }),
 );
 ```
+
+The plugin & `defineNuxtPlugin` API is identical between Nuxt 3 and 4 —
+only the default source directory changed (`app/` in Nuxt 4). Use
+`$ahize` from `useNuxtApp()` to access the provider in components.
 
 ### React (any meta-framework)
 
@@ -387,6 +392,65 @@ Issues and PRs welcome at
 [github.com/productdevbook/ahize](https://github.com/productdevbook/ahize).
 Missing a provider? The pattern is small enough to copy from any
 existing one — `src/providers/livechat.ts` is a good minimal template.
+
+## Credits
+
+`ahize` exists because every one of these libraries solved part of the
+problem and showed us the bugs to design around. Many of the design
+decisions in `ahize` are direct responses to issues filed on these
+projects — thank you to every maintainer and reporter.
+
+**Intercom**
+
+- [`devrnt/react-use-intercom`](https://github.com/devrnt/react-use-intercom) — the gold standard React wrapper; informed our queue-before-load contract and shutdown reversibility design
+- [`nhagen/react-intercom`](https://github.com/nhagen/react-intercom) — early prior art for SSR-safe injection
+- [`@intercom/messenger-js-sdk`](https://www.npmjs.com/package/@intercom/messenger-js-sdk) — Intercom's own typed helper
+
+**Crisp**
+
+- [`crisp-im/crisp-sdk-web`](https://github.com/crisp-im/crisp-sdk-web) — official wrapper; our `$crisp.push`-only contract comes from issues filed against it
+
+**Tawk.to**
+
+- [`tawk/tawk-messenger-react`](https://github.com/tawk/tawk-messenger-react) and [`tawk-messenger-vue-3`](https://github.com/tawk/tawk-messenger-vue-3) — typing gaps & switchWidget bug shaped our typed surface
+
+**Zendesk**
+
+- [`B3nnyL/react-zendesk`](https://github.com/B3nnyL/react-zendesk)
+- [`dansmaculotte/vue-zendesk`](https://github.com/dansmaculotte/vue-zendesk) and [`nuxt-zendesk`](https://github.com/dansmaculotte/nuxt-zendesk) — defer & GDPR prior art
+- [`multivoltage/react-use-zendesk`](https://github.com/multivoltage/react-use-zendesk) — JWT login flow patterns
+
+**HubSpot**
+
+- [`adamsoffer/react-hubspot`](https://github.com/adamsoffer/react-hubspot)
+- [`aaronhayes/react-use-hubspot-form`](https://github.com/aaronhayes/react-use-hubspot-form) — EU region request that drove our region selector
+
+**Chatwoot**
+
+- [`chatwoot/chatwoot`](https://github.com/chatwoot/chatwoot) — the upstream widget SDK and every issue/PR against its window-event API
+- [`@productdevbook/chatwoot`](https://github.com/productdevbook/chatwoot) — earlier work that informed `ahize/chatwoot`'s shape
+
+**Performance & deferred load**
+
+- [`calibreapp/react-live-chat-loader`](https://github.com/calibreapp/react-live-chat-loader) — the facade pattern, ported here as `ahize/facade`
+- [`@builder.io/partytown`](https://github.com/BuilderIO/partytown) — worker offload, wired through `ahize/partytown`
+
+**LiveChat (text.com)**
+
+- [`livechat/chat-widget-adapters`](https://github.com/livechat/chat-widget-adapters) — official multi-framework reference (`@livechat/widget-react` etc.)
+
+**Other providers**
+
+- [`userlike/messenger`](https://github.com/userlike/messenger) — Result&lt;ok, err&gt; pattern we propagate
+- HelpScout Beacon, Drift, Freshchat, Olark, Smartsupp, LiveAgent, Gist, JivoChat, Tidio, Sendbird — official docs & community wrappers
+
+**Other unified-chat work**
+
+- [`@dannyfranca/any-chat`](https://github.com/dannyfranca/any-chat) — earlier multi-provider experiment
+
+If your library should be on this list and isn't,
+[open an issue](https://github.com/productdevbook/ahize/issues) — happy
+to credit.
 
 ## License
 

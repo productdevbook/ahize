@@ -56,7 +56,7 @@ src/
     angular.ts              # ahize/angular (standalone service)
     partytown.ts            # ahize/partytown (forwardSettings helper)
 test/
-  *.test.ts                 # vitest suites (158 tests, 12 files)
+  *.test.ts                 # vitest suites (245 tests, 26 files)
 e2e/
   *.spec.ts                 # Playwright skeletons (run on demand)
 scripts/
@@ -109,6 +109,8 @@ pnpm release        # pnpm test && build && bundle-budget && bumpp --commit --ta
 ## Status
 
 - ✅ All 78 tracked GitHub issues closed (see roadmap #78).
-- ✅ 158 unit tests green across 12 files.
-- ✅ Bundle budget enforced (chatwoot ≤9KB raw, other providers ≤6KB raw, adapters ≤2KB raw — gzip ≈ 1/3 of raw).
+- ✅ 15 vendor-doc audit issues closed (#79–#96 minus the 4 sunset providers).
+- ✅ 4 sunset providers (drift #81, sendbird #91, userlike #95, zendesk-classic #97) marked `@deprecated` + runtime `console.warn`; tracking issues left open.
+- ✅ 245 unit tests green across 26 files.
+- ✅ Bundle budget enforced per provider (chatwoot/crisp ≤10KB, intercom/tawk/freshchat ≤9KB, jivochat ≤8KB, helpscout/hubspot/zendesk/olark ≤7KB, others ≤6KB — gzip ≈ 1/3 of raw).
 - ✅ Published to npm (provenance) and JSR.

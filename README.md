@@ -101,6 +101,12 @@ If you call any method before `load()` resolves, the call is queued and
 flushed in order once the provider is ready. No more "Intercom is not
 defined" warnings.
 
+On top of the unified surface, most providers expose a typed
+`on(event, handler)` for their documented lifecycle events (widget
+open/close, message sent/received, conversation started, unread count,
+…) and a handful of vendor-native methods — see the [Providers](#providers)
+table for the per-provider extras.
+
 ## Identity verification
 
 Most providers want a server-issued HMAC or JWT to prevent users from
@@ -343,27 +349,42 @@ const result = await diagnose("intercom", { appId: "abc123" })
 
 ## Providers
 
-| Provider        | Sub-path                | Identity              |
-| --------------- | ----------------------- | --------------------- |
-| Intercom        | `ahize/intercom`        | HMAC, JWT, regions    |
-| Crisp           | `ahize/crisp`           | HMAC, hot-reconfig    |
-| Tawk.to         | `ahize/tawk`            | HMAC                  |
-| Zendesk         | `ahize/zendesk`         | JWT, callback         |
-| Zendesk Classic | `ahize/zendesk-classic` | prefill               |
-| HubSpot         | `ahize/hubspot`         | JWT, EU/US regions    |
-| Chatwoot        | `ahize/chatwoot`        | HMAC, self-hosted     |
-| LiveChat        | `ahize/livechat`        | —                     |
-| Drift           | `ahize/drift`           | JWT                   |
-| Freshchat       | `ahize/freshchat`       | JWT, EU/US regions    |
-| Olark           | `ahize/olark`           | —                     |
-| Userlike        | `ahize/userlike`        | Result&lt;ok, err&gt; |
-| HelpScout       | `ahize/helpscout`       | HMAC                  |
-| Smartsupp       | `ahize/smartsupp`       | —                     |
-| LiveAgent       | `ahize/liveagent`       | self-hosted opt       |
-| Gist            | `ahize/gist`            | HMAC                  |
-| JivoChat        | `ahize/jivochat`        | rate-limited          |
-| Tidio           | `ahize/tidio`           | —                     |
-| Sendbird        | `ahize/sendbird`        | session token         |
+Every provider ships the unified surface (`load` / `identify` / `track` /
+`pageView` / `show` / `hide` / `shutdown` / `destroy` / `ready` / `isReady` /
+`state` / `getIdentity` / `onIdentityChange`) plus a provider-specific
+extension: `on(event, handler)` typed event bridge, and vendor-native
+methods where they exist. Audited against live vendor docs 2026-04-16.
+
+| Provider  | Sub-path          | Identity / regions                      | Provider-specific extras                                                                                                                                                        |
+| --------- | ----------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Intercom  | `ahize/intercom`  | HMAC, JWT, `us`/`eu`/`au`               | `showSpace`, `showNewMessage`, `startTour/Survey/Checklist`, `showArticle/News/Ticket`, `getVisitorId`, `onShow`/`onHide`/`onUserEmailSupplied`, 11 typed boot fields           |
+| Crisp     | `ahize/crisp`     | HMAC, hot-reconfigure                   | `open`/`close`/`toggle`, `sendMessage`, `helpdeskSearch`, `setSessionSegments`, `setUserAvatar`, 13 events, runtime config                                                      |
+| Tawk.to   | `ahize/tawk`      | HMAC, `login()` restores history        | `maximize`/`minimize`/`popup`, `addTags`/`removeTags`, `getStatus`/`isChat*`, visitor preload, 19 event hooks                                                                   |
+| Zendesk   | `ahize/zendesk`   | JWT, callback                           | `open`/`close`, `setConversationTags`, `setCustomization`, `newConversation`, `resetWidget`, 13 `messenger:on` events, cookies/zIndex config                                    |
+| Chatwoot  | `ahize/chatwoot`  | HMAC, self-hosted, settings             | `setColorScheme`, `deleteAttribute`, `popoutChatWindow`, `setLocale`, `setBubbleVisibility`, `on(opened/closed/postback/…)`, 11 typed settings                                  |
+| HubSpot   | `ahize/hubspot`   | Identification token, `na1`/`eu1`/`ap1` | `on(conversationStarted/…)` (8 events), `status()`, `refresh`, 7 typed config (cookie banner, inline embed, attachment, CSP)                                                    |
+| LiveChat  | `ahize/livechat`  | —                                       | `maximize(draft?)`, `minimize`, `hideGreeting`, `triggerSalesTracker`, `getState/CustomerData/ChatData`, 10 events, 7 typed `__lc` fields                                       |
+| Freshchat | `ahize/freshchat` | JWT, `us`/`eu`/`in`/`au`                | `open`/`close`, `setLocale`, `setTags`/`setFaqTags`, `setBotVariables`, `trackPage`, `isOpen`/`isLoaded`, 16 events, 8 typed init fields                                        |
+| Olark     | `ahize/olark`     | —                                       | `getVisitorDetails()`, `sendMessage/NotificationTo*`, `setOperatorGroup`, `setLocale`, 12 events, `group`/`locale` boot config                                                  |
+| HelpScout | `ahize/helpscout` | HMAC                                    | `search`, `article`, `sessionData`, `config`, `reset`, `toggle`, `askQuestion`, `showMessage`, `info`, `once`, `prefill(attachments)`, full `BeaconConfig` object               |
+| LiveAgent | `ahize/liveagent` | self-hosted opt                         | `addUserDetail`, `addTicketField`, `setVisitorLocation`, `createForm`, `hasOpenedWidget`, `on(chatStarted/chatEnded/online/offline)`                                            |
+| Gist      | `ahize/gist`      | HMAC                                    | `open`/`close`, `showLauncher`/`hideLauncher`, `navigate`, `showArticle`, `trigger`, `setSidebar`/`setStandard`, 12 events                                                      |
+| JivoChat  | `ahize/jivochat`  | `setUserToken` (verification)           | `setClientAttributes` (rate-limited), `setCustomData`, `startCall`, `sendOfflineMessage`, `sendPageTitle`, 12 events, sync `chatMode`/`getUnreadMessagesCount`/`getUtm`         |
+| Smartsupp | `ahize/smartsupp` | —                                       | `open`/`close`, `prefillMessage`, `sendMessage`, `setGroup`, `setLanguage`, `getVisitorId`, `on(messageSent/Received/messengerClose)`, 12 typed `_smartsupp` fields             |
+| Tidio     | `ahize/tidio`     | —                                       | `tidioChatApi.track` forwarding, `setColorPalette`, `display`, `messageFromOperator/Visitor`, `addVisitorTags`, `setVisitorCurrency`, 10 events, pre-load `language`/`identify` |
+
+### Deprecated / sunset providers
+
+Still functional but the underlying vendor has announced sunset / EOL.
+Wrappers emit a one-shot `console.warn` on first `load()` and are marked
+`@deprecated` in JSDoc. No new feature work planned.
+
+| Provider        | Sub-path                | Status                                                                                                                           |
+| --------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Drift           | `ahize/drift`           | Vendor sunset announced 2026-03-06 (Clari + Salesloft).                                                                          |
+| Sendbird        | `ahize/sendbird`        | AI Chatbot Widget discontinued; repo archived 2025-07-09 at v1.9.7. Consider Sendbird Desk.                                      |
+| Userlike        | `ahize/userlike`        | v1 CDN EOL **2026-08-01**. Vendor rebranded to Lime Connect; v2 is `@userlike/messenger` with a different surface.               |
+| Zendesk Classic | `ahize/zendesk-classic` | Limited to Zendesk accounts created before 2023-06-05. Chat Web SDK removal started 2025-04-30. Use `ahize/zendesk` (Messenger). |
 
 ## Migrating
 

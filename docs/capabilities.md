@@ -2,27 +2,27 @@
 
 Programmatic version: `import { capabilities } from "ahize/capabilities"`.
 
-| Provider | HMAC | JWT | Callback | Track events | Unread count | Prefill | setLocale | setTheme | Self-hosted | Regions |
-| -------- | ---- | --- | -------- | ------------ | ------------ | ------- | --------- | -------- | ----------- | ------- |
-| intercom | ✅ | ✅ |  | ✅ | ✅ |  |  |  |  | ✅ |
-| crisp | ✅ |  |  | ✅ | ✅ |  | ✅ |  |  |  |
-| tawk | ✅ |  |  | ✅ | ✅ |  |  |  |  |  |
-| zendesk |  | ✅ | ✅ | ✅ | ✅ |  | ✅ |  |  |  |
-| zendesk-classic |  |  |  |  |  | ✅ |  |  |  |  |
-| hubspot |  | ✅ |  | ✅ | ✅ |  |  |  |  | ✅ |
-| chatwoot | ✅ |  |  | ✅ | ✅ |  | ✅ | ✅ | ✅ |  |
-| livechat |  |  |  | ✅ |  |  |  |  |  |  |
-| drift |  | ✅ |  | ✅ |  |  |  |  |  |  |
-| freshchat |  | ✅ |  | ✅ |  |  |  |  |  | ✅ |
-| olark |  |  |  | ✅ |  |  |  |  |  |  |
-| userlike |  |  |  | ✅ |  |  | ✅ |  |  |  |
-| helpscout | ✅ |  |  | ✅ |  | ✅ |  |  |  |  |
-| smartsupp |  |  |  | ✅ |  |  |  |  |  |  |
-| liveagent |  |  |  |  |  |  |  |  | ✅ |  |
-| gist | ✅ |  |  | ✅ |  |  |  |  |  |  |
-| jivochat |  |  |  |  |  |  |  |  |  |  |
-| tidio |  |  |  | ✅ |  |  |  |  |  |  |
-| sendbird |  |  |  |  |  |  |  |  |  |  |
+| Provider        | HMAC | JWT | Callback | Track events | Unread count | Prefill | setLocale | setTheme | Self-hosted | Regions |
+| --------------- | ---- | --- | -------- | ------------ | ------------ | ------- | --------- | -------- | ----------- | ------- |
+| intercom        | ✅   | ✅  |          | ✅           | ✅           |         |           |          |             | ✅      |
+| crisp           | ✅   |     |          | ✅           | ✅           |         | ✅        |          |             |         |
+| tawk            | ✅   |     |          | ✅           | ✅           |         |           |          |             |         |
+| zendesk         |      | ✅  | ✅       | ✅           | ✅           |         | ✅        |          |             |         |
+| zendesk-classic |      |     |          |              |              | ✅      |           |          |             |         |
+| hubspot         |      | ✅  |          | ✅           | ✅           |         |           |          |             | ✅      |
+| chatwoot        | ✅   |     |          | ✅           | ✅           |         | ✅        | ✅       | ✅          |         |
+| livechat        |      |     |          | ✅           |              |         |           |          |             |         |
+| drift           |      | ✅  |          | ✅           |              |         |           |          |             |         |
+| freshchat       |      | ✅  |          | ✅           |              |         |           |          |             | ✅      |
+| olark           |      |     |          | ✅           |              |         |           |          |             |         |
+| userlike        |      |     |          | ✅           |              |         | ✅        |          |             |         |
+| helpscout       | ✅   |     |          | ✅           |              | ✅      |           |          |             |         |
+| smartsupp       |      |     |          | ✅           |              |         |           |          |             |         |
+| liveagent       |      |     |          |              |              |         |           |          | ✅          |         |
+| gist            | ✅   |     |          | ✅           |              |         |           |          |             |         |
+| jivochat        |      |     |          |              |              |         |           |          |             |         |
+| tidio           |      |     |          | ✅           |              |         |           |          |             |         |
+| sendbird        |      |     |          |              |              |         |           |          |             |         |
 
 Legend:
 
@@ -50,5 +50,5 @@ if (supports("zendesk", "callback")) {
 
 // or read the whole record
 const caps = capabilities("intercom");
-console.log(caps.regions);  // true
+console.log(caps.regions); // true
 ```

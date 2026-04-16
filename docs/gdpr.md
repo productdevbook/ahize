@@ -15,17 +15,18 @@ await intercom.load({ appId: "...", consent: hasMarketingConsent() });
 ## Defer strategies (#7)
 
 ```ts
-load({ appId: "...", defer: "idle" });        // requestIdleCallback (default)
+load({ appId: "...", defer: "idle" }); // requestIdleCallback (default)
 load({ appId: "...", defer: "interaction" }); // first pointerdown/scroll/keydown
-load({ appId: "...", defer: "manual" });      // never injects on its own
-load({ appId: "...", defer: "immediate" });   // pre-consent banner pages
+load({ appId: "...", defer: "manual" }); // never injects on its own
+load({ appId: "...", defer: "immediate" }); // pre-consent banner pages
 ```
 
 ## OneTrust
 
 ```js
 OneTrust.OnConsentChanged(() => {
-  if (OnetrustActiveGroups.includes("C0004")) {  // "C0004" = targeting cookies
+  if (OnetrustActiveGroups.includes("C0004")) {
+    // "C0004" = targeting cookies
     intercom.load({ appId: "..." });
   } else {
     intercom.destroy();
@@ -82,5 +83,5 @@ import * as hubspot from "ahize/hubspot";
 hubspot.load({ portalId: "...", region: "eu1" }); // → js-eu1.hs-scripts.com
 
 import * as intercom from "ahize/intercom";
-intercom.load({ appId: "...", region: "eu" });    // → api-iam.eu.intercom.io
+intercom.load({ appId: "...", region: "eu" }); // → api-iam.eu.intercom.io
 ```

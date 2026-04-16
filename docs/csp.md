@@ -20,14 +20,14 @@ response.setHeader("Content-Security-Policy", toHeaderString(policy));
 Most providers open a websocket. If your CSP uses strict `connect-src`,
 the `wss://` entries below are non-negotiable.
 
-| Provider | WSS endpoints |
-| -------- | ------------- |
+| Provider | WSS endpoints                                                                |
+| -------- | ---------------------------------------------------------------------------- |
 | Intercom | `wss://nexus-websocket-a.intercom.io`, `wss://nexus-websocket-b.intercom.io` |
-| Crisp | `wss://client.relay.crisp.chat` |
-| Tawk.to | `wss://*.tawk.to` |
-| Zendesk | `wss://widget-mediator.zopim.com`, `wss://*.zopim.com` |
-| HubSpot | `wss://*.hubspot.com` |
-| Chatwoot | `wss://<your-host>/cable` |
+| Crisp    | `wss://client.relay.crisp.chat`                                              |
+| Tawk.to  | `wss://*.tawk.to`                                                            |
+| Zendesk  | `wss://widget-mediator.zopim.com`, `wss://*.zopim.com`                       |
+| HubSpot  | `wss://*.hubspot.com`                                                        |
+| Chatwoot | `wss://<your-host>/cable`                                                    |
 
 ## Nonce
 
@@ -35,7 +35,10 @@ Pass the same nonce to your provider's `load()` and your CSP's
 `script-src 'nonce-XXX'`:
 
 ```html
-<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'nonce-abc123' https://widget.intercom.io">
+<meta
+  http-equiv="Content-Security-Policy"
+  content="script-src 'self' 'nonce-abc123' https://widget.intercom.io"
+/>
 ```
 
 ```ts

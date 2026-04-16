@@ -18,20 +18,20 @@
 
 Equivalents:
 
-| react-use-intercom | ahize |
-| ------------------ | ----- |
-| `boot(props)` | `load({ appId, ...props })` |
-| `update(props)` | `identify(props)` |
-| `trackEvent(name, meta)` | `track(name, meta)` |
-| `show()` | `show()` |
-| `hide()` | `hide()` |
-| `shutdown()` | `shutdown()` |
-| `hardShutdown()` | `destroy()` |
-| `boot({ user_hash })` | `identify({ verification: { kind: "hmac", hash } })` |
+| react-use-intercom            | ahize                                                |
+| ----------------------------- | ---------------------------------------------------- |
+| `boot(props)`                 | `load({ appId, ...props })`                          |
+| `update(props)`               | `identify(props)`                                    |
+| `trackEvent(name, meta)`      | `track(name, meta)`                                  |
+| `show()`                      | `show()`                                             |
+| `hide()`                      | `hide()`                                             |
+| `shutdown()`                  | `shutdown()`                                         |
+| `hardShutdown()`              | `destroy()`                                          |
+| `boot({ user_hash })`         | `identify({ verification: { kind: "hmac", hash } })` |
 | `boot({ intercom_user_jwt })` | `identify({ verification: { kind: "jwt", token } })` |
 
-The notable difference: `ahize` separates *boot* (`load()`) from *user
-identity* (`identify()`). `react-use-intercom` collapsed both into
+The notable difference: `ahize` separates _boot_ (`load()`) from _user
+identity_ (`identify()`). `react-use-intercom` collapsed both into
 `boot(props)`.
 
 ## From `react-zendesk`

@@ -143,6 +143,46 @@
     "./diagnostics": {
       "types": "./dist/diagnostics.d.mts",
       "default": "./dist/diagnostics.mjs"
+    },
+    "./next": {
+      "types": "./dist/adapters/next.d.mts",
+      "default": "./dist/adapters/next.mjs"
+    },
+    "./nuxt": {
+      "types": "./dist/adapters/nuxt.d.mts",
+      "default": "./dist/adapters/nuxt.mjs"
+    },
+    "./vue": {
+      "types": "./dist/adapters/vue.d.mts",
+      "default": "./dist/adapters/vue.mjs"
+    },
+    "./react": {
+      "types": "./dist/adapters/react.d.mts",
+      "default": "./dist/adapters/react.mjs"
+    },
+    "./svelte": {
+      "types": "./dist/adapters/svelte.d.mts",
+      "default": "./dist/adapters/svelte.mjs"
+    },
+    "./sveltekit": {
+      "types": "./dist/adapters/sveltekit.d.mts",
+      "default": "./dist/adapters/sveltekit.mjs"
+    },
+    "./remix": {
+      "types": "./dist/adapters/remix.d.mts",
+      "default": "./dist/adapters/remix.mjs"
+    },
+    "./astro": {
+      "types": "./dist/adapters/astro.d.mts",
+      "default": "./dist/adapters/astro.mjs"
+    },
+    "./angular": {
+      "types": "./dist/adapters/angular.d.mts",
+      "default": "./dist/adapters/angular.mjs"
+    },
+    "./partytown": {
+      "types": "./dist/adapters/partytown.d.mts",
+      "default": "./dist/adapters/partytown.mjs"
     }
   },
   "scripts": {

@@ -13,6 +13,7 @@ const BUDGETS = [
   { glob: /^providers\/chatwoot\.mjs$/, max: 10240, label: "provider:chatwoot" },
   { glob: /^providers\/crisp\.mjs$/, max: 10240, label: "provider:crisp" },
   { glob: /^providers\/intercom\.mjs$/, max: 9216, label: "provider:intercom" },
+  { glob: /^providers\/freshchat\.mjs$/, max: 9216, label: "provider:freshchat" },
   { glob: /^providers\/helpscout\.mjs$/, max: 7168, label: "provider:helpscout" },
   { glob: /^providers\/hubspot\.mjs$/, max: 7168, label: "provider:hubspot" },
   { glob: /^providers\/tawk\.mjs$/, max: 9216, label: "provider:tawk" },

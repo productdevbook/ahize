@@ -20,7 +20,7 @@ interface FreshchatUser {
 }
 
 interface FreshchatWidget {
-  init(opts: { token: string; host: string; externalId?: string; restoreId?: string }): void
+  init(opts: Record<string, unknown>): void
   user: {
     setProperties(props: Record<string, unknown>): void
     update(user: FreshchatUser): void
@@ -29,9 +29,20 @@ interface FreshchatWidget {
     setFirstName(name: string): void
     setLastName(name: string): void
     setPhone(phone: string): void
+    setLocale?(locale: string): void
   }
   setExternalId(id: string): void
   setJWTAuthToken(token: string): void
+  setConfig?(config: Record<string, unknown>): void
+  setTags?(tags: string[]): void
+  setFaqTags?(payload: { tags: string[]; filterType?: string }): void
+  trackPage?(url: string, title?: string): void
+  isOpen?(): boolean
+  isLoaded?(): boolean
+  conversation?: {
+    setBotVariables?(vars: Record<string, unknown>): void
+    setConversationProperties?(props: Record<string, unknown>): void
+  }
   track?: (event: string, props?: Record<string, unknown>) => void
   show(): void
   hide(): void
@@ -55,6 +66,54 @@ function w(): FreshchatWindow {
 const queue = createQueue<FreshchatWidget>()
 const store = createIdentityStore()
 const lifecycle = createLifecycle()
+
+export type FreshchatRegion = "us" | "eu" | "in" | "au"
+const REGION_HOSTS: Record<FreshchatRegion, string> = {
+  us: "https://wchat.freshchat.com",
+  eu: "https://wchat.eu.freshchat.com",
+  in: "https://wchat.in.freshchat.com",
+  au: "https://wchat.au.freshchat.com",
+}
+
+export type FreshchatEventName =
+  | "widgetLoaded"
+  | "widgetOpened"
+  | "widgetClosed"
+  | "widgetDestroyed"
+  | "userCreated"
+  | "userCleared"
+  | "userStateChange"
+  | "messageSent"
+  | "messageReceived"
+  | "unreadCountNotify"
+  | "dialogOpened"
+  | "dialogClosed"
+  | "csatReceived"
+  | "csatUpdated"
+  | "conversationResolved"
+  | "frameStateChange"
+
+const FRESHCHAT_EVENT_MAP: Record<string, FreshchatEventName> = {
+  "widget:loaded": "widgetLoaded",
+  "widget:opened": "widgetOpened",
+  "widget:closed": "widgetClosed",
+  "widget:destroyed": "widgetDestroyed",
+  "user:created": "userCreated",
+  "user:cleared": "userCleared",
+  "user:statechange": "userStateChange",
+  "message:sent": "messageSent",
+  "message:received": "messageReceived",
+  "unreadCount:notify": "unreadCountNotify",
+  "dialog:opened": "dialogOpened",
+  "dialog:closed": "dialogClosed",
+  "csat:received": "csatReceived",
+  "csat:updated": "csatUpdated",
+  "conversation:resolved": "conversationResolved",
+  "frame:statechange": "frameStateChange",
+}
+
+const eventListeners = new Map<FreshchatEventName, Set<(payload?: unknown) => void>>()
+const unreadListeners = new Set<(count: number) => void>()
 let readyPromise: Promise<void> | undefined
 let readyResolve: (() => void) | undefined
 let currentToken: string | undefined
@@ -62,16 +121,32 @@ let currentHost: string | undefined
 
 export interface FreshchatLoadOptions extends LoadOptions {
   token: string
-  /** e.g. wchat.freshchat.com (default) or wchat.eu.freshchat.com */
+  /** Convenience for picking the regional host. */
+  region?: FreshchatRegion
+  /** Explicit host (overrides region). e.g. https://wchat.freshchat.com */
   host?: string
   externalId?: string
   restoreId?: string
+  /** Multi-site separation under one Freshchat account. */
+  siteId?: string
+  /** Initial UI locale (e.g. "tr-TR"). */
+  locale?: string
+  /** Bot/topic tags applied at init. */
+  tags?: string[]
+  /** FAQ topic filter at init. */
+  faqTags?: { tags: string[]; filterType?: string }
+  /** Open a parallel conversation on the same topic. */
+  conversationReferenceId?: string
+  /** Open the widget panel on load. */
+  open?: boolean
+  /** Eagerly load the widget chrome before user interaction. */
+  eagerLoad?: boolean
 }
 
 export async function load(options: FreshchatLoadOptions): Promise<void> {
   if (!isBrowser()) return
   if (options.consent === false) return
-  const host = options.host ?? "https://wchat.freshchat.com"
+  const host = options.host ?? (options.region ? REGION_HOSTS[options.region] : REGION_HOSTS.us)
   const h = hashConfig({ token: options.token, host })
   if (lifecycle.state() === "ready" && lifecycle.configHash() === h) return
   if (lifecycle.configHash() && lifecycle.configHash() !== h) await destroy()
@@ -101,14 +176,42 @@ export async function load(options: FreshchatLoadOptions): Promise<void> {
   for (let i = 0; i < 80; i++) {
     const widget = w().fcWidget
     if (widget) {
-      widget.init({
+      const initPayload: Record<string, unknown> = {
         token: options.token,
         host,
         externalId: options.externalId,
         restoreId: options.restoreId,
-      })
+      }
+      if (options.siteId !== undefined) initPayload["siteId"] = options.siteId
+      if (options.locale !== undefined) initPayload["locale"] = options.locale
+      if (options.tags !== undefined) initPayload["tags"] = options.tags
+      if (options.faqTags !== undefined) initPayload["faqTags"] = options.faqTags
+      if (options.conversationReferenceId !== undefined) {
+        initPayload["conversationReferenceId"] = options.conversationReferenceId
+      }
+      if (options.open !== undefined) initPayload["open"] = options.open
+      if (options.eagerLoad !== undefined) {
+        initPayload["config"] = {
+          ...(initPayload["config"] as object),
+          eagerLoad: options.eagerLoad,
+        }
+      }
+      widget.init(initPayload)
       queue.ready(widget)
-      widget.on("widget:loaded", () => readyResolve?.())
+      // Wire all documented widget events to the typed emitter.
+      for (const [vendorName, mapped] of Object.entries(FRESHCHAT_EVENT_MAP)) {
+        widget.on(vendorName, (payload: unknown) => {
+          const set = eventListeners.get(mapped)
+          if (set) for (const l of set) l(payload)
+          if (mapped === "widgetLoaded") readyResolve?.()
+          if (mapped === "unreadCountNotify") {
+            const count =
+              (payload as { count?: number } | undefined)?.count ??
+              (typeof payload === "number" ? payload : 0)
+            for (const l of unreadListeners) l(count)
+          }
+        })
+      }
       break
     }
     await new Promise((r) => setTimeout(r, 50))
@@ -149,18 +252,92 @@ export function track<T extends EventMetadata = EventMetadata>(
   return queue.enqueue((widget) => widget.track?.(event, metadata))
 }
 
-export function pageView(_info?: { path?: string; locale?: string }): Promise<void> {
-  return Promise.resolve()
+export function pageView(info?: { path?: string; locale?: string }): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((widget) => {
+    if (info?.path && widget.trackPage) widget.trackPage(info.path)
+    if (info?.locale) widget.user.setLocale?.(info.locale)
+  })
 }
 
 export function show(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
-  return queue.enqueue((widget) => widget.open())
+  return queue.enqueue((widget) => widget.show())
 }
 
 export function hide(): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((widget) => widget.hide())
+}
+
+export function open(opts?: { name?: string }): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((widget) => widget.open(opts))
+}
+
+export function close(): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
   return queue.enqueue((widget) => widget.close())
+}
+
+export function setLocale(locale: string): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((widget) => widget.user.setLocale?.(locale))
+}
+
+export function setTags(tags: string[]): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((widget) => widget.setTags?.(tags))
+}
+
+export function setFaqTags(payload: { tags: string[]; filterType?: string }): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((widget) => widget.setFaqTags?.(payload))
+}
+
+export function setConfig(config: Record<string, unknown>): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((widget) => widget.setConfig?.(config))
+}
+
+export function setBotVariables(vars: Record<string, unknown>): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((widget) => widget.conversation?.setBotVariables?.(vars))
+}
+
+export function setConversationProperties(props: Record<string, unknown>): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((widget) => widget.conversation?.setConversationProperties?.(props))
+}
+
+export function trackPage(url: string, title?: string): Promise<void> {
+  if (!isBrowser()) return Promise.resolve()
+  return queue.enqueue((widget) => widget.trackPage?.(url, title))
+}
+
+export function isOpen(): boolean | undefined {
+  if (!isBrowser()) return undefined
+  return w().fcWidget?.isOpen?.()
+}
+
+export function isLoaded(): boolean | undefined {
+  if (!isBrowser()) return undefined
+  return w().fcWidget?.isLoaded?.()
+}
+
+export function on(event: FreshchatEventName, listener: (payload?: unknown) => void): () => void {
+  let set = eventListeners.get(event)
+  if (!set) {
+    set = new Set()
+    eventListeners.set(event, set)
+  }
+  set.add(listener)
+  return () => set?.delete(listener)
+}
+
+export function onUnreadCountChange(listener: (count: number) => void): () => void {
+  unreadListeners.add(listener)
+  return () => unreadListeners.delete(listener)
 }
 
 export function shutdown(): Promise<void> {
@@ -185,6 +362,8 @@ export async function destroy(): Promise<void> {
   Reflect.deleteProperty(g, "fcSettings")
   queue.reset()
   store.reset()
+  eventListeners.clear()
+  unreadListeners.clear()
   currentToken = undefined
   currentHost = undefined
   readyPromise = undefined

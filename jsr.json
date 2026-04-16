@@ -1,6 +1,6 @@
 {
   "name": "@productdevbook/ahize",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "exports": {
     ".": "./src/index.ts",
     "./intercom": "./src/providers/intercom.ts",

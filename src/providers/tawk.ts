@@ -1,10 +1,17 @@
+import { createIdentityStore } from "../_identity.ts";
 import { injectScript, isBrowser } from "../_loader.ts";
-import type { LoadOptions, Visitor } from "../_types.ts";
+import { createQueue } from "../_queue.ts";
+import type { Identity, IdentityListener, IdentityState, LoadOptions } from "../_types.ts";
 
 interface TawkAPI {
+  onLoad?: () => void;
   visitor?: Record<string, unknown>;
   setAttributes?: (attrs: Record<string, unknown>, cb?: (err?: Error) => void) => void;
-  addEvent?: (event: string, metadata?: Record<string, unknown>, cb?: (err?: Error) => void) => void;
+  addEvent?: (
+    event: string,
+    metadata?: Record<string, unknown>,
+    cb?: (err?: Error) => void,
+  ) => void;
   showWidget?: () => void;
   hideWidget?: () => void;
   endChat?: () => void;
@@ -25,6 +32,9 @@ function api(): TawkAPI {
   return g.Tawk_API;
 }
 
+const queue = createQueue<TawkAPI>();
+const store = createIdentityStore();
+
 export interface TawkLoadOptions extends LoadOptions {
   propertyId: string;
   widgetId?: string;
@@ -32,8 +42,12 @@ export interface TawkLoadOptions extends LoadOptions {
 
 export async function load(options: TawkLoadOptions): Promise<void> {
   if (!isBrowser()) return;
-  api();
+  if (queue.isReady()) return;
+
+  const a = api();
   w().Tawk_LoadStart = new Date();
+  a.onLoad = () => queue.ready(a);
+
   const widget = options.widgetId ?? "default";
   await injectScript({
     id: "ahize-tawk",
@@ -41,25 +55,55 @@ export async function load(options: TawkLoadOptions): Promise<void> {
   });
 }
 
-export function identify(visitor: Visitor): void {
-  const attrs: Record<string, unknown> = {};
-  if (visitor.name) attrs["name"] = visitor.name;
-  if (visitor.email) attrs["email"] = visitor.email;
-  api().setAttributes?.(attrs);
+export function identify(identity: Identity): Promise<void> {
+  if (!isBrowser()) return Promise.resolve();
+  if (identity.verification && identity.verification.kind !== "hmac") {
+    return Promise.reject(new Error("Tawk requires HMAC verification (kind: 'hmac')"));
+  }
+  store.identify(identity);
+  return queue.enqueue((a) => {
+    const attrs: Record<string, unknown> = {};
+    if (identity.name) attrs["name"] = identity.name;
+    if (identity.email) attrs["email"] = identity.email;
+    if (identity.verification?.kind === "hmac") attrs["hash"] = identity.verification.hash;
+    a.setAttributes?.(attrs);
+  });
 }
 
-export function track(event: string, metadata?: Record<string, unknown>): void {
-  api().addEvent?.(event, metadata);
+export function track(event: string, metadata?: Record<string, unknown>): Promise<void> {
+  if (!isBrowser()) return Promise.resolve();
+  return queue.enqueue((a) => {
+    a.addEvent?.(event, metadata);
+  });
 }
 
-export function show(): void {
-  api().showWidget?.();
+export function show(): Promise<void> {
+  if (!isBrowser()) return Promise.resolve();
+  return queue.enqueue((a) => {
+    a.showWidget?.();
+  });
 }
 
-export function hide(): void {
-  api().hideWidget?.();
+export function hide(): Promise<void> {
+  if (!isBrowser()) return Promise.resolve();
+  return queue.enqueue((a) => {
+    a.hideWidget?.();
+  });
 }
 
-export function shutdown(): void {
-  api().endChat?.();
+export function shutdown(): Promise<void> {
+  if (!isBrowser()) return Promise.resolve();
+  return queue.enqueue((a) => {
+    a.endChat?.();
+    store.reset();
+    queue.reset();
+  });
+}
+
+export function getIdentity(): IdentityState {
+  return store.get();
+}
+
+export function onIdentityChange(listener: IdentityListener): () => void {
+  return store.onChange(listener);
 }

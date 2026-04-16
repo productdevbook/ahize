@@ -7,6 +7,19 @@ export interface Visitor {
   [key: string]: unknown;
 }
 
+export type Verification =
+  | { kind: "hmac"; hash: string }
+  | { kind: "jwt"; token: string }
+  | { kind: "callback"; getToken: () => string | Promise<string> };
+
+export interface Identity extends Visitor {
+  verification?: Verification;
+}
+
+export type IdentityState = { kind: "anonymous" } | { kind: "identified"; identity: Identity };
+
+export type IdentityListener = (next: IdentityState, prev: IdentityState) => void;
+
 export interface LoadOptions {
   appId?: string;
   key?: string;
@@ -15,9 +28,4 @@ export interface LoadOptions {
   autoShow?: boolean;
 }
 
-export type ProviderName =
-  | "intercom"
-  | "crisp"
-  | "tawk"
-  | "zendesk"
-  | "hubspot";
+export type ProviderName = "intercom" | "crisp" | "tawk" | "zendesk" | "hubspot" | "chatwoot";

@@ -33,10 +33,14 @@ export function injectScript(opts: InjectOptions): Promise<void> {
     );
 
     const head = document.getElementsByTagName("script")[0];
-    if (head?.parentNode) {
-      head.parentNode.insertBefore(script, head);
+    const parent = head?.parentNode as
+      | { insertBefore(node: unknown, ref: unknown): void }
+      | null
+      | undefined;
+    if (parent && head) {
+      parent.insertBefore(script, head);
     } else {
-      document.head.appendChild(script);
+      (document.head as { appendChild(node: unknown): void }).appendChild(script);
     }
   });
 

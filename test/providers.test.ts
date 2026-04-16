@@ -18,11 +18,13 @@ describe("providers", () => {
         expect(typeof provider.show).toBe("function");
         expect(typeof provider.hide).toBe("function");
         expect(typeof provider.shutdown).toBe("function");
+        expect(typeof provider.getIdentity).toBe("function");
+        expect(typeof provider.onIdentityChange).toBe("function");
       });
 
       it("is SSR-safe on load()", async () => {
         await expect(
-          (provider.load as (o: Record<string, string>) => Promise<void>)({
+          (provider.load as (o: unknown) => Promise<void>)({
             appId: "x",
             websiteId: "x",
             websiteToken: "x",
@@ -31,6 +33,20 @@ describe("providers", () => {
             portalId: "x",
           }),
         ).resolves.toBeUndefined();
+      });
+
+      it("is SSR-safe on every method (no hang)", async () => {
+        await expect(
+          (provider.identify as (v: unknown) => Promise<void>)({ id: "u1" }),
+        ).resolves.toBeUndefined();
+        await expect(provider.track("evt")).resolves.toBeUndefined();
+        await expect(provider.show()).resolves.toBeUndefined();
+        await expect(provider.hide()).resolves.toBeUndefined();
+        await expect(provider.shutdown()).resolves.toBeUndefined();
+      });
+
+      it("starts with anonymous identity", () => {
+        expect(provider.getIdentity()).toEqual({ kind: "anonymous" });
       });
     });
   }

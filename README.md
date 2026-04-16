@@ -397,6 +397,22 @@ Same shape works for `react-zendesk`, `tawk-messenger-react`,
 across all of them: `ahize` separates **boot** (`load`) from **user
 identity** (`identify`).
 
+## Playground
+
+A plain Vite + TypeScript playground is checked into `playground/` for
+trying a real widget in the browser without setting up a framework.
+
+```sh
+pnpm playground
+```
+
+That installs the playground's own deps (vite, typescript) and opens the
+dev server on `http://localhost:5173`. It imports the Chatwoot provider
+directly from `../src/providers/chatwoot.ts`, so any code change in
+`src/` reloads instantly — no build step. Paste your `websiteToken` (and
+`baseUrl` if self-hosted), hit **load()**, then play with
+identify/track/show/hide/setLocale and watch the event log.
+
 ## Contributing
 
 Issues and PRs welcome at

@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ahize — Chatwoot playground</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      body {
+        margin: 0;
+        padding: 2rem;
+        max-width: 720px;
+        margin-inline: auto;
+      }
+      h1 {
+        margin-top: 0;
+        font-size: 1.5rem;
+      }
+      .card {
+        border: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+        border-radius: 12px;
+        padding: 1.25rem;
+        margin-block: 1rem;
+      }
+      label {
+        display: block;
+        margin-block: 0.5rem 0.25rem;
+        font-size: 0.85rem;
+        opacity: 0.75;
+      }
+      input,
+      button {
+        font: inherit;
+        padding: 0.5rem 0.75rem;
+        border-radius: 8px;
+        border: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+        background: transparent;
+        color: inherit;
+      }
+      input {
+        width: 100%;
+        box-sizing: border-box;
+      }
+      button {
+        cursor: pointer;
+        margin: 0.25rem 0.25rem 0.25rem 0;
+      }
+      button:hover {
+        background: color-mix(in srgb, currentColor 6%, transparent);
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+      pre {
+        background: color-mix(in srgb, currentColor 5%, transparent);
+        padding: 1rem;
+        border-radius: 8px;
+        overflow-x: auto;
+        font-size: 0.8rem;
+        max-height: 240px;
+        overflow-y: auto;
+      }
+      .badge {
+        display: inline-block;
+        padding: 0.125rem 0.5rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        background: color-mix(in srgb, currentColor 10%, transparent);
+      }
+      .badge.ready {
+        background: #22c55e;
+        color: white;
+      }
+      .badge.loading {
+        background: #f59e0b;
+        color: white;
+      }
+      .badge.idle {
+        background: color-mix(in srgb, currentColor 20%, transparent);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>
+      ahize · Chatwoot playground
+      <span id="state" class="badge idle">idle</span>
+    </h1>
+
+    <div class="card">
+      <strong>load()</strong>
+      <label>websiteToken</label>
+      <input id="websiteToken" placeholder="your-chatwoot-inbox-token" />
+      <label>baseUrl (optional — defaults to app.chatwoot.com)</label>
+      <input id="baseUrl" placeholder="https://app.chatwoot.com" />
+      <div class="row" style="margin-top: 0.75rem">
+        <button id="load">load()</button>
+        <button id="shutdown">shutdown()</button>
+        <button id="destroy">destroy()</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <strong>identify()</strong>
+      <label>id</label>
+      <input id="uid" value="user_1" />
+      <label>email</label>
+      <input id="email" value="ada@example.com" />
+      <label>name</label>
+      <input id="name" value="Ada Lovelace" />
+      <label>identifier_hash (HMAC, optional)</label>
+      <input id="hash" placeholder="HMAC-SHA256(id, inbox_hmac_token)" />
+      <div class="row" style="margin-top: 0.75rem">
+        <button id="identify">identify()</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <strong>track() & pageView()</strong>
+      <label>event name</label>
+      <input id="event" value="plan_upgraded" />
+      <label>metadata JSON</label>
+      <input id="meta" value='{"tier":"pro"}' />
+      <div class="row" style="margin-top: 0.75rem">
+        <button id="track">track()</button>
+        <button id="pageView">pageView()</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <strong>widget</strong>
+      <div class="row">
+        <button id="show">show()</button>
+        <button id="hide">hide()</button>
+        <button id="setLocale">setLocale('tr')</button>
+        <button id="setLabel">setLabel('vip')</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <strong>event log</strong>
+      <pre id="log"></pre>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

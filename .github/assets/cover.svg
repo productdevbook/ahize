@@ -106,53 +106,53 @@
   <!-- CENTER CONTENT — BIG & LEGIBLE        -->
   <!-- ════════════════════════════════════ -->
 
-  <!-- Wordmark (uses central baseline so y is the visual center) -->
-  <text x="600" y="210" text-anchor="middle" dominant-baseline="central"
+  <!-- Wordmark (200px font; baseline ≈ visual-center + 70) -->
+  <text x="600" y="270" text-anchor="middle"
         fill="url(#wordmarkGrad)"
         font-family="'Cooper','Cooper Black','Georgia',serif"
         font-size="200" font-weight="900" letter-spacing="-6">ahize</text>
 
   <!-- Coral underline -->
-  <path d="M420,304 Q600,322 780,304" stroke="url(#coral)" stroke-width="7" fill="none" stroke-linecap="round"/>
+  <path d="M420,298 Q600,318 780,298" stroke="url(#coral)" stroke-width="7" fill="none" stroke-linecap="round"/>
 
-  <!-- Tagline -->
-  <text x="600" y="356" text-anchor="middle" dominant-baseline="central"
+  <!-- Tagline (30px ⇒ baseline ≈ visual-center + 10) -->
+  <text x="600" y="362" text-anchor="middle"
         fill="#1b3a2f"
         font-family="'Inter','Helvetica Neue',Arial,sans-serif"
         font-size="30" font-weight="700" letter-spacing="-0.3">One API for every live-chat widget.</text>
 
-  <!-- Feature chips — row centered at y=420 -->
+  <!-- Feature chips (18px font, 48h chip ⇒ baseline y≈31 for visual center) -->
   <g font-family="'Inter','Helvetica Neue',Arial,sans-serif" font-size="18" font-weight="700"
-     text-anchor="middle" dominant-baseline="central">
+     text-anchor="middle">
     <g transform="translate(252, 402)">
       <rect x="0" y="0" width="176" height="48" rx="24" fill="url(#coral)"/>
-      <text x="88" y="24" fill="#fff">0 dependencies</text>
+      <text x="88" y="31" fill="#fff">0 dependencies</text>
     </g>
     <g transform="translate(442, 402)">
       <rect x="0" y="0" width="160" height="48" rx="24" fill="url(#mint)"/>
-      <text x="80" y="24" fill="#143a2b">13+ providers</text>
+      <text x="80" y="31" fill="#143a2b">13+ providers</text>
     </g>
     <g transform="translate(616, 402)">
       <rect x="0" y="0" width="148" height="48" rx="24" fill="url(#periwinkle)"/>
-      <text x="74" y="24" fill="#fff">TypeScript</text>
+      <text x="74" y="31" fill="#fff">TypeScript</text>
     </g>
     <g transform="translate(778, 402)">
       <rect x="0" y="0" width="178" height="48" rx="24" fill="url(#butter)"/>
-      <text x="89" y="24" fill="#5a3a00">tree-shakeable</text>
+      <text x="89" y="31" fill="#5a3a00">tree-shakeable</text>
     </g>
   </g>
 
-  <!-- npm install pill — centered at y=512 -->
+  <!-- npm install pill (20px font, 56h pill ⇒ baseline y≈35) -->
   <g transform="translate(458, 488)" filter="url(#softShadow)">
     <rect x="0" y="0" width="284" height="56" rx="28" fill="#1b3a2f"/>
-    <text x="142" y="28" text-anchor="middle" dominant-baseline="central"
+    <text x="142" y="35" text-anchor="middle"
           font-family="'JetBrains Mono','SF Mono',monospace" font-size="20" font-weight="700">
       <tspan fill="#ff8a65" font-weight="800">$</tspan><tspan fill="#fbf6ed"> npm i </tspan><tspan fill="#83e0bd" font-weight="800">ahize</tspan>
     </text>
   </g>
 
   <!-- GitHub link -->
-  <text x="600" y="584" text-anchor="middle" dominant-baseline="central"
+  <text x="600" y="590" text-anchor="middle"
         fill="#1b3a2f" opacity="0.55"
         font-family="'Inter','Helvetica Neue',Arial,sans-serif"
         font-size="16" font-weight="600" letter-spacing="0.3">github.com/productdevbook/ahize</text>

@@ -1,6 +1,6 @@
 {
   "name": "ahize",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "One unified API for 18 live-chat & customer-support widgets — Intercom, Crisp, Tawk.to, Zendesk, HubSpot, Chatwoot, LiveChat, Drift, Freshchat, Olark, Userlike, HelpScout, Smartsupp, LiveAgent, Gist, JivoChat, Tidio, Sendbird. Zero deps, tree-shakeable, SSR-safe, CSP-aware, GDPR-first, strict TypeScript.",
   "keywords": [
     "ahize",

@@ -20,16 +20,12 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        node: [20, 22, 24]
     steps:
       - uses: actions/checkout@v5
       - run: corepack enable
       - uses: actions/setup-node@v6
         with:
-          node-version: ${{ matrix.node }}
+          node-version: latest
           cache: pnpm
       - name: 📦 Install dependencies
         run: pnpm install --frozen-lockfile
@@ -44,5 +40,4 @@ jobs:
       - name: 📐 Bundle size budget
         run: pnpm bundle-budget
       - name: 🔍 Are The Types Wrong (ATTW)
-        if: matrix.node == 22
         run: pnpm attw

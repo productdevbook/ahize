@@ -18,6 +18,7 @@ interface HubSpotConversations {
     close(): void
     remove(): void
     refresh(options?: { openToNewThread?: boolean }): void
+    status?(): { loaded: boolean; pending: boolean }
   }
   clear(options?: { resetWidget?: boolean }): void
   on(event: string, listener: (payload: unknown) => void): void
@@ -45,12 +46,59 @@ const conversations = createQueue<HubSpotConversations>()
 const store = createIdentityStore()
 const lifecycle = createLifecycle()
 const unreadListeners = new Set<(count: number) => void>()
+type HubSpotEventName =
+  | "conversationStarted"
+  | "conversationClosed"
+  | "userSelectedThread"
+  | "contactAssociated"
+  | "userInteractedWithWidget"
+  | "widgetLoaded"
+  | "widgetClosed"
+  | "quickReplyButtonClick"
+const eventListeners = new Map<HubSpotEventName, Set<(payload: unknown) => void>>()
+const HUBSPOT_EVENTS: readonly HubSpotEventName[] = [
+  "conversationStarted",
+  "conversationClosed",
+  "userSelectedThread",
+  "contactAssociated",
+  "userInteractedWithWidget",
+  "widgetLoaded",
+  "widgetClosed",
+  "quickReplyButtonClick",
+]
 let readyPromise: Promise<void> | undefined
 let readyResolve: (() => void) | undefined
 
+const TYPED_SETTINGS_KEYS = [
+  "inlineEmbedSelector",
+  "enableWidgetCookieBanner",
+  "disableAttachment",
+  "disableInitialInputFocus",
+  "avoidInlineStyles",
+  "hideNewThreadLink",
+  "loadImmediately",
+] as const
+
+export type HubSpotRegion = "na1" | "eu1" | "ap1"
+export type HubSpotCookieBanner = boolean | "ON_WIDGET_LOAD" | "ON_EXIT_INTENT"
+
 export interface HubSpotLoadOptions extends LoadOptions {
   portalId: string
-  region?: "na1" | "eu1"
+  region?: HubSpotRegion
+  /** Inline-embedded chat: CSS selector for the host element. */
+  inlineEmbedSelector?: string
+  /** GDPR cookie banner mode. */
+  enableWidgetCookieBanner?: HubSpotCookieBanner
+  /** Disable attachment uploads. */
+  disableAttachment?: boolean
+  /** Disable focusing the composer on widget open. */
+  disableInitialInputFocus?: boolean
+  /** Avoid inline styles (helps strict CSP setups). */
+  avoidInlineStyles?: boolean
+  /** Hide the "Start a new conversation" link. */
+  hideNewThreadLink?: boolean
+  /** When true, HubSpot auto-loads the widget on script ready (default: true). Wrapper sets false unless overridden. */
+  loadImmediately?: boolean
 }
 
 function lowercaseKeys<T extends Record<string, unknown>>(obj: T): Record<string, unknown> {
@@ -88,7 +136,12 @@ export async function load(options: HubSpotLoadOptions): Promise<void> {
   lifecycle.setConfigHash(h)
   await waitForDefer(options.defer ?? "immediate")
 
-  w().hsConversationsSettings = { loadImmediately: false }
+  const settings: Record<string, unknown> = { loadImmediately: false }
+  for (const key of TYPED_SETTINGS_KEYS) {
+    const v = options[key]
+    if (v !== undefined) settings[key] = v
+  }
+  w().hsConversationsSettings = settings
 
   readyPromise = new Promise((r) => {
     readyResolve = r
@@ -102,11 +155,23 @@ export async function load(options: HubSpotLoadOptions): Promise<void> {
         const count = (payload as { unreadCount?: number } | undefined)?.unreadCount ?? 0
         for (const l of unreadListeners) l(count)
       })
+      for (const evt of HUBSPOT_EVENTS) {
+        api.on(evt, (payload: unknown) => {
+          const set = eventListeners.get(evt)
+          if (!set) return
+          for (const l of set) l(payload)
+        })
+      }
       readyResolve?.()
     }
   })
 
-  const host = options.region === "eu1" ? "js-eu1.hs-scripts.com" : "js.hs-scripts.com"
+  const host =
+    options.region === "eu1"
+      ? "js-eu1.hs-scripts.com"
+      : options.region === "ap1"
+        ? "js-ap1.hs-scripts.com"
+        : "js.hs-scripts.com"
   try {
     await injectScript({
       id: "ahize-hubspot",
@@ -125,11 +190,15 @@ export async function load(options: HubSpotLoadOptions): Promise<void> {
 export function identify(identity: Identity): Promise<void> {
   if (!isBrowser()) return Promise.resolve()
   if (identity.verification && identity.verification.kind !== "jwt") {
-    return Promise.reject(new Error("HubSpot requires JWT verification (kind: 'jwt')"))
+    return Promise.reject(
+      new Error(
+        "HubSpot requires an identification token (modeled as kind: 'jwt'); HubSpot's token is opaque, not a true JWT.",
+      ),
+    )
   }
   if (identity.email && !identity.verification) {
     console.warn(
-      "[ahize/hubspot] identify() called with email but no JWT — HubSpot treats the session as anonymous until identificationToken is provided.",
+      "[ahize/hubspot] identify() called with email but no identificationToken — HubSpot treats the session as anonymous until a token is provided.",
     )
   }
   store.identify(identity)
@@ -214,6 +283,21 @@ export function onUnreadCountChange(listener: (count: number) => void): () => vo
   return () => unreadListeners.delete(listener)
 }
 
+export function on(event: HubSpotEventName, listener: (payload: unknown) => void): () => void {
+  let set = eventListeners.get(event)
+  if (!set) {
+    set = new Set()
+    eventListeners.set(event, set)
+  }
+  set.add(listener)
+  return () => set?.delete(listener)
+}
+
+export function status(): { loaded: boolean; pending: boolean } | undefined {
+  if (!isBrowser()) return undefined
+  return w().HubSpotConversations?.widget.status?.()
+}
+
 export async function destroy(): Promise<void> {
   if (!isBrowser()) return
   await shutdown().catch(() => undefined)
@@ -226,6 +310,7 @@ export async function destroy(): Promise<void> {
   conversations.reset()
   store.reset()
   unreadListeners.clear()
+  eventListeners.clear()
   readyPromise = undefined
   readyResolve = undefined
   lifecycle.clearConfigHash()
